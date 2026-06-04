@@ -1,6 +1,9 @@
 """FastAPI backend — Superhost Predictor & Performance Simulator"""
 from __future__ import annotations
 import json
+import logging
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -12,12 +15,30 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .model_loader import get_model, get_metadata
+from . import agent as agent_module
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR  = Path(__file__).parent.parent
 GEO_FILE  = BASE_DIR / 'neighbourhoods.geojson'
 NEIGH_FILE = BASE_DIR / 'ml_pipeline' / 'neighbourhood_stats.json'
 
-app = FastAPI(title="Superhost Predictor API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run agent data build in a background thread so it doesn't block startup."""
+    def _build():
+        try:
+            pipeline = get_model()
+            meta     = get_metadata()
+            agent_module.build_agent_data(pipeline, meta)
+        except Exception as exc:
+            logger.warning(f"Agent data build failed: {exc}")
+    threading.Thread(target=_build, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Superhost Predictor API", lifespan=lifespan)
 
 # ── Static files ────────────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
@@ -183,3 +204,23 @@ def simulate(req: SimulateRequest):
     # Find sweet spot (peak)
     peak = max(curve, key=lambda x: x["probability"])
     return {"curve": curve, "sweet_spot": peak["listings"]}
+
+
+# ── Agent 3 ──────────────────────────────────────────────────────────────────────
+@app.get("/agent/at-risk")
+def agent_at_risk():
+    listings = agent_module.get_at_risk_listings()
+    if not listings:
+        return JSONResponse({"status": "loading", "listings": []})
+    return JSONResponse({"status": "ready", "listings": listings})
+
+
+@app.post("/agent/tickets/{listing_id}")
+def agent_tickets(listing_id: int):
+    try:
+        result = agent_module.generate_tickets_for_listing(listing_id)
+        return JSONResponse(result)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"LLM call failed: {e}")

@@ -39,6 +39,7 @@
   </a>
   <div class="nav-links">
     <a href="#simulator">Simulator</a>
+    <a href="#agent-section">Agent</a>
     <a href="#map-section">Map</a>
     <a href="#insights-section">Insights</a>
     <a href="http://insideairbnb.com" target="_blank" rel="noopener">Data Source</a>
@@ -157,11 +158,54 @@
               <div class="confidence-bar-label"><span>0%</span><span>Superhost Threshold (50%)</span><span>100%</span></div>
               <div class="confidence-bar-track"><div class="confidence-bar-fill" id="confidence-bar" style="width:0%"></div></div>
             </div>
+
+            <!-- Hard Rules Checklist -->
+            <div class="hard-rules-section">
+              <button class="hard-rules-toggle" id="hard-rules-toggle" aria-expanded="false">
+                <span class="hard-rules-toggle-icon" id="hard-rules-toggle-icon">▾</span>
+                Airbnb Hard Qualification Rules
+              </button>
+              <div class="hard-rules-body" id="hard-rules-body" hidden>
+                <div id="hard-rules-banner" class="hard-rules-banner" hidden></div>
+                <ul class="hard-rules-list" id="hard-rules-list">
+                  <li class="hard-rule-row" id="rule-rating">
+                    <span class="rule-icon" id="rule-icon-rating">—</span>
+                    <span class="rule-text">Overall Rating <strong>≥ 4.8</strong></span>
+                    <span class="rule-current" id="rule-val-rating">—</span>
+                  </li>
+                  <li class="hard-rule-row" id="rule-response">
+                    <span class="rule-icon" id="rule-icon-response">—</span>
+                    <span class="rule-text">Response Rate <strong>≥ 90%</strong></span>
+                    <span class="rule-current" id="rule-val-response">—</span>
+                  </li>
+                  <li class="hard-rule-row hard-rule-static">
+                    <span class="rule-icon rule-static">ℹ</span>
+                    <span class="rule-text">Completed Stays <strong>≥ 10</strong> in past year</span>
+                    <span class="rule-current rule-assumed">Assumed from listing</span>
+                  </li>
+                  <li class="hard-rule-row hard-rule-static">
+                    <span class="rule-icon rule-static">ℹ</span>
+                    <span class="rule-text">Cancellation Rate <strong>&lt; 1%</strong></span>
+                    <span class="rule-current rule-assumed">Assumed from listing</span>
+                  </li>
+                </ul>
+                <p class="hard-rules-note">Rules 3 &amp; 4 are not captured by the sliders — they are shown for completeness of Airbnb's official criteria.</p>
+              </div>
+            </div>
           </div>
 
           <!-- Radar chart -->
           <div class="card radar-card">
-            <div class="chart-title">Your Metrics vs. Superhost Median</div>
+            <div class="radar-card-header">
+              <div class="chart-title" style="margin-bottom:0;">Your Metrics vs. <span id="radar-benchmark-label">Superhost Median</span></div>
+              <div class="neighbourhood-selector-wrap">
+                <label for="neighbourhood-select" class="neighbourhood-select-label">Benchmark:</label>
+                <select id="neighbourhood-select" class="neighbourhood-select">
+                  <option value="__metro__">Twin Cities Metro (All)</option>
+                </select>
+                <span class="neighbourhood-sample-warn" id="neighbourhood-sample-warn" hidden></span>
+              </div>
+            </div>
             <canvas id="radarChart"></canvas>
           </div>
 
@@ -204,7 +248,39 @@
     </div>
   </section>
 
-  <!-- 4. TWIN CITIES MAP -->
+  <!-- 4. AGENT 3 — SMART TASK TICKETING -->
+  <section class="section" id="agent-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">AI Agent</div>
+        <h2>Smart Task Ticketing</h2>
+        <p>LightGBM flags the listing &rarr; SHAP confirms the rating is the root cause &rarr; Groq LLM parses the last 5 guest reviews and auto-generates actionable maintenance tickets</p>
+      </div>
+
+      <!-- Agent status banner -->
+      <div id="agent-status-banner" class="agent-status-banner agent-loading">
+        <div class="spinner-sm"></div>
+        <span>Agent is analysing 967 at-risk listings using SHAP&hellip; This takes ~30 seconds on first load.</span>
+      </div>
+
+      <!-- At-risk listings grid -->
+      <div class="at-risk-grid" id="at-risk-grid"></div>
+
+      <!-- Ticket results area -->
+      <div id="ticket-results" hidden>
+        <div class="ticket-results-header">
+          <div>
+            <div class="ticket-results-title" id="ticket-listing-name"></div>
+            <div class="ticket-results-sub" id="ticket-listing-meta"></div>
+          </div>
+          <button class="ticket-close-btn" id="ticket-close-btn" onclick="closeTickets()">&times; Close</button>
+        </div>
+        <div class="tickets-grid" id="tickets-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. TWIN CITIES MAP -->
   <section class="section" id="map-section">
     <div class="container">
       <div class="section-header">

@@ -9,6 +9,7 @@
 // State
 // ─────────────────────────────────────────────────────────────────────
 let metadata = null;
+let neighStats = {};        // module-level cache for neighbourhood stats
 let gaugeChart   = null;
 let radarChart   = null;
 let scaleChart   = null;
@@ -186,15 +187,59 @@ function initRadar() {
 
 function updateRadar(sliderVals) {
   if (!metadata) return;
-  const shAvg = metadata.superhost_avg || {};
+
+  // Determine which benchmark to use: local county or metro-wide
+  const select = document.getElementById('neighbourhood-select');
+  const selectedCounty = select ? select.value : '__metro__';
+  const warnEl = document.getElementById('neighbourhood-sample-warn');
+  const labelEl = document.getElementById('radar-benchmark-label');
+
+  const shAvgGlobal = metadata.superhost_avg || {};
+  let benchmarkAvg = { ...shAvgGlobal };  // start with global
+  let usingLocal = false;
+
+  if (selectedCounty !== '__metro__' && neighStats[selectedCounty]) {
+    const ns = neighStats[selectedCounty];
+    const MIN_SAMPLE = 30;
+
+    if (ns.listing_count >= MIN_SAMPLE) {
+      // Blend: use local data for the axes we have, fall back for the rest
+      benchmarkAvg = {
+        ...shAvgGlobal,                                // fallback baseline
+        review_scores_rating:  ns.median_review_score   ?? shAvgGlobal.review_scores_rating,
+        host_response_rate:    ns.median_response_rate  ?? shAvgGlobal.host_response_rate,
+        reviews_per_month:     ns.median_reviews_pm     ?? shAvgGlobal.reviews_per_month,
+        // acceptance_rate, experience_years, listings, amenities: stay global
+      };
+      usingLocal = true;
+      if (warnEl) { warnEl.hidden = true; warnEl.textContent = ''; }
+      if (labelEl) labelEl.textContent = `Superhost Median · ${selectedCounty}`;
+    } else {
+      // Sample too small — use metro, show pill warning
+      if (warnEl) {
+        warnEl.hidden = false;
+        warnEl.textContent = `⚠ N=${ns.listing_count} · Showing metro median`;
+      }
+      if (labelEl) labelEl.textContent = 'Superhost Median (metro)';
+    }
+  } else {
+    if (warnEl) { warnEl.hidden = true; warnEl.textContent = ''; }
+    if (labelEl) labelEl.textContent = 'Superhost Median';
+  }
+
   const userNorm = SLIDER_IDS.map(id => {
     const [mn, mx] = RADAR_RANGES[id];
     return normalise(sliderVals[id] || 0, mn, mx);
   });
   const shNorm = SLIDER_IDS.map(id => {
     const [mn, mx] = RADAR_RANGES[id];
-    return normalise(shAvg[id] || 0, mn, mx);
+    return normalise(benchmarkAvg[id] || 0, mn, mx);
   });
+
+  // Update legend label in chart dataset
+  const benchLabel = labelEl ? labelEl.textContent : 'Superhost Median';
+  radarChart.data.datasets[1].label = benchLabel;
+
   radarChart.data.datasets[0].data = userNorm;
   radarChart.data.datasets[1].data = shNorm;
   radarChart.update('active');
@@ -609,6 +654,82 @@ async function fetchSimulation(vals) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Hard Threshold Checklist
+// ─────────────────────────────────────────────────────────────────────
+const HARD_RULES = [
+  {
+    id:        'rating',
+    feature:   'review_scores_rating',
+    threshold: 4.8,
+    pass:      v => v >= 4.8,
+    format:    v => v.toFixed(1),
+    label:     'Overall Rating',
+  },
+  {
+    id:        'response',
+    feature:   'host_response_rate',
+    threshold: 90,
+    pass:      v => v >= 90,
+    format:    v => v.toFixed(0) + '%',
+    label:     'Response Rate',
+  },
+];
+
+function updateHardRules(sliderVals) {
+  const bannerEl = document.getElementById('hard-rules-banner');
+  let failedLabels = [];
+
+  HARD_RULES.forEach(rule => {
+    const val = sliderVals[rule.feature];
+    const passing = rule.pass(val);
+    const rowEl  = document.getElementById(`rule-${rule.id}`);
+    const iconEl = document.getElementById(`rule-icon-${rule.id}`);
+    const valEl  = document.getElementById(`rule-val-${rule.id}`);
+
+    if (!rowEl || !iconEl || !valEl) return;
+
+    rowEl.classList.toggle('rule-pass', passing);
+    rowEl.classList.toggle('rule-fail', !passing);
+    iconEl.textContent  = passing ? '✅' : '❌';
+    iconEl.className    = `rule-icon ${passing ? 'pass' : 'fail'}`;
+    valEl.textContent   = rule.format(val);
+    valEl.className     = `rule-current ${passing ? 'pass' : 'fail'}`;
+
+    if (!passing) failedLabels.push(rule.label);
+  });
+
+  if (!bannerEl) return;
+
+  if (failedLabels.length === 0) {
+    bannerEl.hidden    = false;
+    bannerEl.className = 'hard-rules-banner pass';
+    bannerEl.textContent = '✅ Eligible for Airbnb\'s formal Superhost review.';
+  } else {
+    bannerEl.hidden    = false;
+    bannerEl.className = 'hard-rules-banner warn';
+    const names = failedLabels.join(' and ');
+    bannerEl.textContent =
+      `⚠ Mathematically your market behavior aligns with Superhosts, ` +
+      `but Airbnb's hard ${names} threshold${failedLabels.length > 1 ? 's' : ''} ` +
+      `would currently disqualify you.`;
+  }
+}
+
+// Toggle open/close for checklist
+function initHardRulesToggle() {
+  const btn  = document.getElementById('hard-rules-toggle');
+  const body = document.getElementById('hard-rules-body');
+  const icon = document.getElementById('hard-rules-toggle-icon');
+  if (!btn || !body || !icon) return;
+  btn.addEventListener('click', () => {
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    body.hidden = expanded;
+    icon.classList.toggle('open', !expanded);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Trigger prediction (debounced)
 // ─────────────────────────────────────────────────────────────────────
 function triggerPredict() {
@@ -619,6 +740,7 @@ function triggerPredict() {
       const data = await fetchPrediction(vals);
       updateGauge(data.probability);
       updateRadar(vals);
+      updateHardRules(vals);
       renderRecommendations(data.recommendations);
     } catch(e) {
       console.error('Predict error:', e);
@@ -637,6 +759,150 @@ function triggerSimulate() {
       console.error('Simulate error:', e);
     }
   }, 400);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Neighbourhood Dropdown — populate from fetched stats
+// ─────────────────────────────────────────────────────────────────────
+function populateNeighbourhoodDropdown(stats) {
+  const select = document.getElementById('neighbourhood-select');
+  if (!select) return;
+  const counties = Object.keys(stats).sort();
+  counties.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name + ' County';
+    select.appendChild(opt);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Agent 3 — Smart Task Ticketing
+// ─────────────────────────────────────────────────────────────────────
+const CAT_ICONS = {
+  Maintenance:   '🔧',
+  Housekeeping:  '🧹',
+  Amenities:     '🛋️',
+  Communication: '💬',
+};
+
+function agentProbColor(prob) {
+  if (prob >= 0.6) return '#2d8f5e';
+  if (prob >= 0.4) return '#d97706';
+  return '#dc2626';
+}
+
+function renderAtRiskCard(listing) {
+  const pct = Math.round(listing.probability * 100);
+  const col = agentProbColor(listing.probability);
+  const safeName = listing.listing_name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  return `
+    <div class="at-risk-card animate-fade-in" id="atrisk-${listing.listing_id}">
+      <div class="at-risk-card-header">
+        <div class="at-risk-name">${listing.listing_name}</div>
+        <div class="at-risk-rating">⭐ ${listing.rating}</div>
+      </div>
+      <div class="at-risk-meta">
+        <span>📍 ${listing.county} County</span>
+        <span>💬 ${listing.review_count} reviews</span>
+        <span>🏠 ${pct}% SH prob</span>
+      </div>
+      <div class="at-risk-prob-bar">
+        <div class="at-risk-prob-fill" style="width:${pct}%;background:${col};"></div>
+      </div>
+      <button class="at-risk-generate-btn"
+              id="btn-${listing.listing_id}"
+              onclick="generateTickets(${listing.listing_id}, '${safeName}', '${listing.county}', ${listing.rating}, ${listing.review_count}, ${pct})">
+        ✦ Generate Task Tickets
+      </button>
+    </div>`;
+}
+
+function renderTicketCard(ticket, i) {
+  const catClass = 'cat-' + ticket.category.toLowerCase();
+  const priClass = 'priority-' + ticket.priority.toLowerCase();
+  const icon     = CAT_ICONS[ticket.category] || '📋';
+  return `
+    <div class="ticket-card animate-fade-in" style="animation-delay:${i*0.08}s">
+      <div class="ticket-card-top">
+        <span class="ticket-category ${catClass}">${icon} ${ticket.category}</span>
+        <span class="ticket-priority ${priClass}">${ticket.priority}</span>
+      </div>
+      <div class="ticket-root-cause">${ticket.root_cause}</div>
+      <div class="ticket-action-label">Recommended Action</div>
+      <div class="ticket-action">${ticket.recommended_action}</div>
+    </div>`;
+}
+
+async function generateTickets(listingId, name, county, rating, reviews, prob) {
+  document.querySelectorAll('.at-risk-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('atrisk-' + listingId);
+  const btn  = document.getElementById('btn-'    + listingId);
+  if (card) card.classList.add('selected');
+  if (btn)  { btn.disabled = true; btn.innerHTML = '<div class="btn-spinner"></div> Generating\u2026'; }
+
+  const resultsEl = document.getElementById('ticket-results');
+  const nameEl    = document.getElementById('ticket-listing-name');
+  const metaEl    = document.getElementById('ticket-listing-meta');
+  const gridEl    = document.getElementById('tickets-grid');
+
+  nameEl.textContent = name;
+  metaEl.textContent = county + ' County \u00b7 \u2b50 ' + rating + '/5.0 \u00b7 ' + reviews + ' reviews \u00b7 ' + prob + '% Superhost probability';
+  gridEl.innerHTML   = '<div class="at-risk-empty"><div class="pulse">Analysing reviews with Groq LLM\u2026</div></div>';
+  resultsEl.hidden   = false;
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  try {
+    const res  = await fetch('/agent/tickets/' + listingId, { method: 'POST' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.tickets || data.tickets.length === 0) {
+      gridEl.innerHTML = '<div class="at-risk-empty">No specific issues identified in the latest reviews.</div>';
+    } else {
+      gridEl.innerHTML = data.tickets.map((t, i) => renderTicketCard(t, i)).join('');
+    }
+  } catch(e) {
+    gridEl.innerHTML = '<div class="at-risk-empty" style="color:var(--rose);">Error generating tickets: ' + e.message + '</div>';
+    console.error('Agent ticket error:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '\u2746 Generate Task Tickets'; }
+  }
+}
+
+function closeTickets() {
+  document.getElementById('ticket-results').hidden = true;
+  document.querySelectorAll('.at-risk-card').forEach(c => c.classList.remove('selected'));
+}
+
+async function loadAgentSection() {
+  const banner = document.getElementById('agent-status-banner');
+  const grid   = document.getElementById('at-risk-grid');
+  if (!banner || !grid) return;
+
+  let attempts = 0;
+  const MAX_ATTEMPTS = 40;
+
+  const poll = async () => {
+    try {
+      const res  = await fetch('/agent/at-risk');
+      const data = await res.json();
+      if (data.status === 'ready' && data.listings && data.listings.length > 0) {
+        grid.innerHTML = data.listings.map(renderAtRiskCard).join('');
+        banner.className = 'agent-status-banner agent-ready';
+        banner.innerHTML = '\u2705 Agent ready \u2014 ' + data.listings.length + ' listings identified where review score is the top SHAP negative driver. Click any listing to generate task tickets.';
+        return;
+      }
+      attempts++;
+      if (attempts < MAX_ATTEMPTS) setTimeout(poll, 5000);
+      else {
+        banner.innerHTML = '\u26a0 Agent data took too long to load. Please refresh.';
+      }
+    } catch(e) {
+      attempts++;
+      if (attempts < MAX_ATTEMPTS) setTimeout(poll, 5000);
+    }
+  };
+  poll();
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -689,7 +955,8 @@ async function boot() {
   try {
     const nRes = await fetch('/neighbourhood-stats');
     if (!nRes.ok) throw new Error('neighbourhood-stats: ' + nRes.status);
-    const neighStats = await nRes.json();
+    neighStats = await nRes.json();          // store in module state
+    populateNeighbourhoodDropdown(neighStats);
     await initMap(neighStats);
   } catch(e) {
     console.warn('Map data not available:', e);
@@ -717,9 +984,24 @@ async function boot() {
     updateSliderDisplay(id, parseFloat(input.value));
   });
 
+  // Neighbourhood dropdown — update radar benchmark on change
+  const neighSelect = document.getElementById('neighbourhood-select');
+  if (neighSelect) {
+    neighSelect.addEventListener('change', () => {
+      const vals = getSliderValues();
+      updateRadar(vals);
+    });
+  }
+
+  // Init hard rules toggle and run initial evaluation
+  initHardRulesToggle();
+
   // Initial prediction
   triggerPredict();
   triggerSimulate();
+
+  // Start Agent 3 background polling
+  loadAgentSection();
 
   // Hide loading overlay
   const overlay = document.getElementById('loading-overlay');
