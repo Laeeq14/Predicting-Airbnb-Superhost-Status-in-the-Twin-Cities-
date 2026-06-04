@@ -1,0 +1,503 @@
+{
+  "best_model_name": "LightGBM (Tuned)",
+  "numeric_features": [
+    "host_response_rate",
+    "host_acceptance_rate",
+    "host_listings_count",
+    "host_total_listings_count",
+    "host_identity_verified",
+    "latitude",
+    "longitude",
+    "accommodates",
+    "bathrooms",
+    "bedrooms",
+    "beds",
+    "price",
+    "minimum_nights",
+    "maximum_nights",
+    "number_of_reviews",
+    "review_scores_rating",
+    "review_scores_cleanliness",
+    "review_scores_communication",
+    "review_scores_value",
+    "reviews_per_month",
+    "host_experience_years",
+    "num_amenities",
+    "review_count",
+    "avg_comment_length",
+    "number_of_reviews_log1p",
+    "review_count_log1p",
+    "avg_comment_length_log1p",
+    "host_listings_count_log1p"
+  ],
+  "categorical_features": [
+    "neighbourhood_cleansed",
+    "property_type",
+    "room_type"
+  ],
+  "feature_defaults": {
+    "host_response_rate": 100.0,
+    "host_acceptance_rate": 98.0,
+    "host_listings_count": 2.0,
+    "host_total_listings_count": 3.0,
+    "host_identity_verified": 1.0,
+    "latitude": 44.95974,
+    "longitude": -93.26225,
+    "accommodates": 4.0,
+    "bathrooms": 1.0,
+    "bedrooms": 2.0,
+    "beds": 2.0,
+    "price": 135.0,
+    "minimum_nights": 2.0,
+    "maximum_nights": 365.0,
+    "number_of_reviews": 21.0,
+    "review_scores_rating": 4.89,
+    "review_scores_cleanliness": 4.89,
+    "review_scores_communication": 4.96,
+    "review_scores_value": 4.82,
+    "reviews_per_month": 1.23,
+    "host_experience_years": 7.874058863791923,
+    "num_amenities": 46.0,
+    "review_count": 23.0,
+    "avg_comment_length": 214.72222222222223,
+    "number_of_reviews_log1p": 3.091042453358316,
+    "review_count_log1p": 3.1780538303479458,
+    "avg_comment_length_log1p": 5.373991571835503,
+    "host_listings_count_log1p": 1.0986122886681098,
+    "neighbourhood_cleansed": "Hennepin",
+    "property_type": "Entire home",
+    "room_type": "Entire home/apt"
+  },
+  "feature_importance": [
+    {
+      "feature": "review_scores_rating",
+      "importance": 0.07272
+    },
+    {
+      "feature": "property_type_Entire serviced apartment",
+      "importance": 0.05463
+    },
+    {
+      "feature": "neighbourhood_cleansed_Isanti",
+      "importance": 0.04541
+    },
+    {
+      "feature": "host_listings_count",
+      "importance": 0.04263
+    },
+    {
+      "feature": "neighbourhood_cleansed_Pierce",
+      "importance": 0.037
+    },
+    {
+      "feature": "property_type_Private room in rental unit",
+      "importance": 0.03603
+    },
+    {
+      "feature": "host_response_rate",
+      "importance": 0.03178
+    },
+    {
+      "feature": "host_total_listings_count",
+      "importance": 0.0299
+    },
+    {
+      "feature": "property_type_Private room in bed and breakfast",
+      "importance": 0.02661
+    },
+    {
+      "feature": "number_of_reviews",
+      "importance": 0.02476
+    },
+    {
+      "feature": "property_type_Room in hotel",
+      "importance": 0.02368
+    },
+    {
+      "feature": "room_type_Private room",
+      "importance": 0.02298
+    },
+    {
+      "feature": "neighbourhood_cleansed_Anoka",
+      "importance": 0.02265
+    },
+    {
+      "feature": "neighbourhood_cleansed_Sherburne",
+      "importance": 0.02044
+    },
+    {
+      "feature": "room_type_Entire home/apt",
+      "importance": 0.01945
+    },
+    {
+      "feature": "property_type_Private room in home",
+      "importance": 0.01863
+    },
+    {
+      "feature": "neighbourhood_cleansed_Carver",
+      "importance": 0.01753
+    },
+    {
+      "feature": "property_type_Entire condo",
+      "importance": 0.01686
+    },
+    {
+      "feature": "host_acceptance_rate",
+      "importance": 0.01642
+    },
+    {
+      "feature": "neighbourhood_cleansed_Scott",
+      "importance": 0.01624
+    }
+  ],
+  "model_performance": {
+    "Logistic Regression": {
+      "accuracy": 0.7385,
+      "roc_auc": 0.8148,
+      "f1": 0.7576,
+      "precision": 0.7339,
+      "recall": 0.7828
+    },
+    "Decision Tree": {
+      "accuracy": 0.7636,
+      "roc_auc": 0.8102,
+      "f1": 0.7765,
+      "precision": 0.7665,
+      "recall": 0.7869
+    },
+    "Random Forest": {
+      "accuracy": 0.7872,
+      "roc_auc": 0.8661,
+      "f1": 0.7959
+    },
+    "XGBoost": {
+      "accuracy": 0.7749,
+      "roc_auc": 0.8541,
+      "f1": 0.7881,
+      "precision": 0.7745,
+      "recall": 0.8023
+    },
+    "LightGBM": {
+      "accuracy": 0.7813,
+      "roc_auc": 0.8561,
+      "f1": 0.795
+    },
+    "CatBoost": {
+      "accuracy": 0.785,
+      "roc_auc": 0.8608,
+      "f1": 0.798
+    },
+    "Random Forest (Tuned)": {
+      "accuracy": 0.7845,
+      "roc_auc": 0.8618,
+      "f1": 0.7966
+    },
+    "XGBoost (Tuned)": {
+      "accuracy": 0.7765,
+      "roc_auc": 0.857,
+      "f1": 0.791,
+      "precision": 0.7725,
+      "recall": 0.8105
+    },
+    "LightGBM (Tuned)": {
+      "accuracy": 0.7845,
+      "roc_auc": 0.8675,
+      "f1": 0.7964,
+      "precision": 0.7856,
+      "recall": 0.8074
+    },
+    "CatBoost (Tuned)": {
+      "accuracy": 0.7717,
+      "roc_auc": 0.8563,
+      "f1": 0.7834
+    },
+    "Voting Ensemble": {
+      "accuracy": 0.785,
+      "roc_auc": 0.8658,
+      "f1": 0.7978
+    }
+  },
+  "superhost_rate": 0.5222,
+  "superhost_avg": {
+    "review_scores_rating": 4.93,
+    "reviews_per_month": 1.53,
+    "host_response_rate": 100.0,
+    "host_acceptance_rate": 99.0,
+    "host_experience_years": 8.58,
+    "host_listings_count": 3.0,
+    "num_amenities": 50.0
+  },
+  "non_superhost_avg": {
+    "review_scores_rating": 4.75,
+    "reviews_per_month": 1.2,
+    "host_response_rate": 100.0,
+    "host_acceptance_rate": 98.0,
+    "host_experience_years": 6.62,
+    "host_listings_count": 2.0,
+    "num_amenities": 40.0
+  },
+  "slider_features": [
+    "review_scores_rating",
+    "reviews_per_month",
+    "host_response_rate",
+    "host_acceptance_rate",
+    "host_experience_years",
+    "host_listings_count",
+    "num_amenities"
+  ],
+  "slider_config": {
+    "review_scores_rating": {
+      "label": "Review Score Rating",
+      "min": 1.0,
+      "max": 5.0,
+      "step": 0.1,
+      "unit": "/ 5.0"
+    },
+    "reviews_per_month": {
+      "label": "Reviews per Month",
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1,
+      "unit": "/mo"
+    },
+    "host_response_rate": {
+      "label": "Response Rate",
+      "min": 0.0,
+      "max": 100.0,
+      "step": 1.0,
+      "unit": "%"
+    },
+    "host_acceptance_rate": {
+      "label": "Acceptance Rate",
+      "min": 0.0,
+      "max": 100.0,
+      "step": 1.0,
+      "unit": "%"
+    },
+    "host_experience_years": {
+      "label": "Host Experience",
+      "min": 0.0,
+      "max": 20.0,
+      "step": 0.5,
+      "unit": "yrs"
+    },
+    "host_listings_count": {
+      "label": "Number of Listings",
+      "min": 1.0,
+      "max": 50.0,
+      "step": 1.0,
+      "unit": ""
+    },
+    "num_amenities": {
+      "label": "Number of Amenities",
+      "min": 0.0,
+      "max": 80.0,
+      "step": 1.0,
+      "unit": ""
+    }
+  },
+  "scale_curve": [
+    {
+      "listings": 1,
+      "probability": 0.676
+    },
+    {
+      "listings": 2,
+      "probability": 0.8927
+    },
+    {
+      "listings": 3,
+      "probability": 0.9433
+    },
+    {
+      "listings": 4,
+      "probability": 0.94
+    },
+    {
+      "listings": 5,
+      "probability": 0.9403
+    },
+    {
+      "listings": 6,
+      "probability": 0.9363
+    },
+    {
+      "listings": 7,
+      "probability": 0.9455
+    },
+    {
+      "listings": 8,
+      "probability": 0.9297
+    },
+    {
+      "listings": 9,
+      "probability": 0.9297
+    },
+    {
+      "listings": 10,
+      "probability": 0.9322
+    },
+    {
+      "listings": 11,
+      "probability": 0.9549
+    },
+    {
+      "listings": 12,
+      "probability": 0.957
+    },
+    {
+      "listings": 13,
+      "probability": 0.9518
+    },
+    {
+      "listings": 14,
+      "probability": 0.943
+    },
+    {
+      "listings": 15,
+      "probability": 0.943
+    },
+    {
+      "listings": 16,
+      "probability": 0.9444
+    },
+    {
+      "listings": 17,
+      "probability": 0.9444
+    },
+    {
+      "listings": 18,
+      "probability": 0.9444
+    },
+    {
+      "listings": 19,
+      "probability": 0.9444
+    },
+    {
+      "listings": 20,
+      "probability": 0.9444
+    },
+    {
+      "listings": 21,
+      "probability": 0.9444
+    },
+    {
+      "listings": 22,
+      "probability": 0.9872
+    },
+    {
+      "listings": 23,
+      "probability": 0.9872
+    },
+    {
+      "listings": 24,
+      "probability": 0.9872
+    },
+    {
+      "listings": 25,
+      "probability": 0.9872
+    },
+    {
+      "listings": 26,
+      "probability": 0.9872
+    },
+    {
+      "listings": 27,
+      "probability": 0.9872
+    },
+    {
+      "listings": 28,
+      "probability": 0.9872
+    },
+    {
+      "listings": 29,
+      "probability": 0.9872
+    },
+    {
+      "listings": 30,
+      "probability": 0.9872
+    },
+    {
+      "listings": 31,
+      "probability": 0.9872
+    },
+    {
+      "listings": 32,
+      "probability": 0.9872
+    },
+    {
+      "listings": 33,
+      "probability": 0.9872
+    },
+    {
+      "listings": 34,
+      "probability": 0.9872
+    },
+    {
+      "listings": 35,
+      "probability": 0.9872
+    },
+    {
+      "listings": 36,
+      "probability": 0.9848
+    },
+    {
+      "listings": 37,
+      "probability": 0.9848
+    },
+    {
+      "listings": 38,
+      "probability": 0.9829
+    },
+    {
+      "listings": 39,
+      "probability": 0.9829
+    },
+    {
+      "listings": 40,
+      "probability": 0.9829
+    },
+    {
+      "listings": 41,
+      "probability": 0.9829
+    },
+    {
+      "listings": 42,
+      "probability": 0.9829
+    },
+    {
+      "listings": 43,
+      "probability": 0.9829
+    },
+    {
+      "listings": 44,
+      "probability": 0.9829
+    },
+    {
+      "listings": 45,
+      "probability": 0.9829
+    },
+    {
+      "listings": 46,
+      "probability": 0.9829
+    },
+    {
+      "listings": 47,
+      "probability": 0.9829
+    },
+    {
+      "listings": 48,
+      "probability": 0.9829
+    },
+    {
+      "listings": 49,
+      "probability": 0.9829
+    },
+    {
+      "listings": 50,
+      "probability": 0.9829
+    }
+  ],
+  "total_listings": 10407,
+  "training_date": "2026-06-02T20:27:16.360870"
+}

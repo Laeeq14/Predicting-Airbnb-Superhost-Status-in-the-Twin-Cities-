@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Superhost Predictor &amp; Performance Simulator | Twin Cities MSA</title>
+  <meta name="description" content="Predict your Airbnb Superhost probability using machine learning. Get personalised recommendations, scale warnings, and neighbourhood insights for the Twin Cities market."/>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+
+  <!-- Libraries (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="loading-brand">Superhost Predictor</div>
+  <div class="spinner"></div>
+  <p class="loading-text">Loading AI model &amp; data…</p>
+</div>
+
+<!-- NAV BAR -->
+<nav class="top-nav">
+  <a href="#" class="nav-brand">
+    <div class="nav-logo">
+      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 1a4 4 0 0 1 4 4c0 3-4 10-4 10S4 8 4 5a4 4 0 0 1 4-4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+      </svg>
+    </div>
+    <span class="nav-brand-text">Superhost Predictor</span>
+  </a>
+  <div class="nav-links">
+    <a href="#simulator">Simulator</a>
+    <a href="#map-section">Map</a>
+    <a href="#insights-section">Insights</a>
+    <a href="http://insideairbnb.com" target="_blank" rel="noopener">Data Source</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Twin Cities MSA · AI-Powered
+      </div>
+      <h1>Superhost <span>Predictor</span></h1>
+      <p class="hero-subtitle">Performance Simulator &amp; Decision Intelligence Platform for Airbnb Hosts</p>
+      <div class="hero-stats" id="hero-stats">
+        <div class="hero-stat"><span class="dot"></span><strong id="stat-listings">10,407</strong> Listings Analysed</div>
+        <div class="hero-stat"><span class="dot"></span>XGBoost &middot; <strong id="stat-auc">—</strong> AUC</div>
+        <div class="hero-stat"><span class="dot"></span><strong id="stat-sh-rate">52%</strong> Superhost Rate</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- 1. WHAT-IF SIMULATOR -->
+  <section class="section" id="simulator">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Interactive Tool</div>
+        <h2>What-If Simulator</h2>
+        <p>Adjust your host metrics and see your Superhost probability update in real time</p>
+      </div>
+
+      <div class="simulator-grid">
+
+        <!-- LEFT: Sliders -->
+        <div class="card sliders-panel">
+          <h3>Your Host Metrics</h3>
+
+          <div class="slider-item" id="slider-review_scores_rating">
+            <div class="slider-header">
+              <span class="slider-label">Review Score Rating</span>
+              <span class="slider-value" id="val-review_scores_rating">4.5<span class="slider-unit">/ 5.0</span></span>
+            </div>
+            <input type="range" id="review_scores_rating" min="1" max="5" step="0.1" value="4.5"/>
+          </div>
+
+          <div class="slider-item" id="slider-reviews_per_month">
+            <div class="slider-header">
+              <span class="slider-label">Reviews per Month</span>
+              <span class="slider-value" id="val-reviews_per_month">2.0<span class="slider-unit">/mo</span></span>
+            </div>
+            <input type="range" id="reviews_per_month" min="0" max="10" step="0.1" value="2"/>
+          </div>
+
+          <div class="slider-item" id="slider-host_response_rate">
+            <div class="slider-header">
+              <span class="slider-label">Response Rate</span>
+              <span class="slider-value" id="val-host_response_rate">90<span class="slider-unit">%</span></span>
+            </div>
+            <input type="range" id="host_response_rate" min="0" max="100" step="1" value="90"/>
+          </div>
+
+          <div class="slider-item" id="slider-host_acceptance_rate">
+            <div class="slider-header">
+              <span class="slider-label">Acceptance Rate</span>
+              <span class="slider-value" id="val-host_acceptance_rate">85<span class="slider-unit">%</span></span>
+            </div>
+            <input type="range" id="host_acceptance_rate" min="0" max="100" step="1" value="85"/>
+          </div>
+
+          <div class="slider-item" id="slider-host_experience_years">
+            <div class="slider-header">
+              <span class="slider-label">Host Experience</span>
+              <span class="slider-value" id="val-host_experience_years">5.0<span class="slider-unit">yrs</span></span>
+            </div>
+            <input type="range" id="host_experience_years" min="0" max="20" step="0.5" value="5"/>
+          </div>
+
+          <div class="slider-item" id="slider-host_listings_count">
+            <div class="slider-header">
+              <span class="slider-label">Number of Listings</span>
+              <span class="slider-value" id="val-host_listings_count">3<span class="slider-unit"></span></span>
+            </div>
+            <input type="range" id="host_listings_count" min="1" max="50" step="1" value="3"/>
+          </div>
+
+          <div class="slider-item" id="slider-num_amenities">
+            <div class="slider-header">
+              <span class="slider-label">Number of Amenities</span>
+              <span class="slider-value" id="val-num_amenities">30<span class="slider-unit"></span></span>
+            </div>
+            <input type="range" id="num_amenities" min="0" max="80" step="1" value="30"/>
+          </div>
+        </div>
+
+        <!-- RIGHT: Probability + Radar -->
+        <div class="prediction-panel">
+
+          <!-- Gauge card -->
+          <div class="card gauge-card card-accent">
+            <p style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:18px;">Superhost Probability</p>
+            <div class="gauge-wrapper">
+              <canvas id="gaugeCanvas" width="220" height="120"></canvas>
+              <div class="gauge-overlay">
+                <div class="gauge-pct" id="gauge-pct">—</div>
+                <div class="gauge-label">probability</div>
+              </div>
+            </div>
+            <div id="prediction-verdict" class="prediction-verdict not-yet" style="margin-bottom:12px;">Loading…</div>
+            <div class="confidence-bar-wrap">
+              <div class="confidence-bar-label"><span>0%</span><span>Superhost Threshold (50%)</span><span>100%</span></div>
+              <div class="confidence-bar-track"><div class="confidence-bar-fill" id="confidence-bar" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <!-- Radar chart -->
+          <div class="card radar-card">
+            <div class="chart-title">Your Metrics vs. Superhost Median</div>
+            <canvas id="radarChart"></canvas>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. RECOMMENDATIONS -->
+  <section class="section" id="recommendations-section" style="padding-top:0">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">AI Insights</div>
+        <h2>Personalised Recommendations</h2>
+        <p>AI-generated actions ranked by their predicted impact on your Superhost probability</p>
+      </div>
+      <div class="recommendations-grid" id="recommendations">
+        <div class="card" style="padding:28px;text-align:center;color:var(--text-muted);">
+          <div class="pulse">Computing recommendations…</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. SCALE WARNING -->
+  <section class="section" id="scale-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Scale Analysis</div>
+        <h2>Scale Warning System</h2>
+        <p>See exactly where adding more listings starts to hurt your Superhost probability due to operational drag</p>
+      </div>
+      <div class="card chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+          <div class="chart-title" style="margin-bottom:0;">Listings Count &rarr; Superhost Probability</div>
+          <div class="sweet-spot-label" id="sweet-spot-label">Optimal Scale: Loading…</div>
+        </div>
+        <canvas id="scaleChart" style="max-height:280px;"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. TWIN CITIES MAP -->
+  <section class="section" id="map-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Geography</div>
+        <h2>Twin Cities Superhost Density Map</h2>
+        <p>Click any neighbourhood to explore local Superhost metrics and benchmarks</p>
+      </div>
+      <div class="map-wrapper">
+        <div class="map-container" id="map">
+          <div class="map-status-msg" id="map-loading-msg">
+            <div class="spinner-sm"></div>
+            <span>Loading map…</span>
+          </div>
+        </div>
+      </div>
+      <div class="map-legend" id="map-legend">
+        <span class="map-legend-title">Superhost Rate:</span>
+        <div class="legend-item"><span class="legend-dot" style="background:#1a7a4a;"></span>&gt;70%</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#2d8f5e;"></span>55–70%</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#5cba85;"></span>40–55%</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#d97706;"></span>25–40%</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#dc2626;"></span>&lt;25%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. INSIGHTS -->
+  <section class="section" id="insights-section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Model Analysis</div>
+        <h2>Model Insights</h2>
+        <p>What the XGBoost model learned from 10,407 listings across two scrape periods</p>
+      </div>
+      <div class="insights-grid">
+
+        <!-- Feature Importance -->
+        <div class="card chart-card">
+          <div class="chart-title">Top Feature Importances (XGBoost)</div>
+          <canvas id="importanceChart" style="max-height:400px;"></canvas>
+        </div>
+
+        <!-- Model Performance -->
+        <div class="card chart-card">
+          <div class="chart-title">Model Comparison — Combined Dataset</div>
+          <table class="perf-table" id="perf-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Accuracy</th>
+                <th>ROC-AUC</th>
+                <th>F1</th>
+              </tr>
+            </thead>
+            <tbody id="perf-tbody">
+              <tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:20px;">Loading…</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:20px;padding:14px 16px;background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);">
+            <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.65;">
+              <strong style="color:var(--primary);">Training approach:</strong> Combined June 2025 &amp; September 2025 listings (10,407 rows) with a host-aware train/test split to prevent temporal leakage.
+              Models evaluated on a held-out test set of ~1,870 listings.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p>
+      Superhost Predictor &amp; Performance Simulator &mdash;
+      Twin Cities MSA &middot; Built with XGBoost, FastAPI &amp; Chart.js &middot;
+      Data: <a href="http://insideairbnb.com" target="_blank" rel="noopener">Inside Airbnb</a>
+      (Jun 2025 &amp; Sep 2025)
+    </p>
+  </div>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

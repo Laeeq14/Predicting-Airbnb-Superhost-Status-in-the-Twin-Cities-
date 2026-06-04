@@ -1,0 +1,162 @@
+{
+  "Anoka": {
+    "superhost_rate": 0.538,
+    "listing_count": 461,
+    "median_price": 135.0,
+    "median_review_score": 4.89,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 45.15957,
+    "lon": -93.25275
+  },
+  "Carver": {
+    "superhost_rate": 0.5122,
+    "listing_count": 164,
+    "median_price": 170.0,
+    "median_review_score": 4.93,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 44.83943,
+    "lon": -93.66112
+  },
+  "Chisago": {
+    "superhost_rate": 0.5792,
+    "listing_count": 221,
+    "median_price": 187.0,
+    "median_review_score": 4.92,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.05,
+    "lat": 45.48018,
+    "lon": -92.8394
+  },
+  "Dakota": {
+    "superhost_rate": 0.4299,
+    "listing_count": 521,
+    "median_price": 127.0,
+    "median_review_score": 4.87,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 44.78182,
+    "lon": -93.12386
+  },
+  "Hennepin": {
+    "superhost_rate": 0.5105,
+    "listing_count": 5193,
+    "median_price": 135.0,
+    "median_review_score": 4.88,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 44.9582,
+    "lon": -93.31304
+  },
+  "Isanti": {
+    "superhost_rate": 0.5405,
+    "listing_count": 74,
+    "median_price": 217.5,
+    "median_review_score": 4.94,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.04,
+    "lat": 45.53404,
+    "lon": -93.31062
+  },
+  "Le Sueur": {
+    "superhost_rate": 0.4051,
+    "listing_count": 79,
+    "median_price": 232.0,
+    "median_review_score": 4.98,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.2,
+    "lat": 44.30564,
+    "lon": -93.65227
+  },
+  "Mille Lacs": {
+    "superhost_rate": 0.4225,
+    "listing_count": 213,
+    "median_price": 255.0,
+    "median_review_score": 4.9,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 0.99,
+    "lat": 46.15322,
+    "lon": -93.59291
+  },
+  "Pierce": {
+    "superhost_rate": 0.7198,
+    "listing_count": 182,
+    "median_price": 140.5,
+    "median_review_score": 4.95,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 44.70226,
+    "lon": -92.58618
+  },
+  "Ramsey": {
+    "superhost_rate": 0.5543,
+    "listing_count": 1887,
+    "median_price": 121.0,
+    "median_review_score": 4.89,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 44.96653,
+    "lon": -93.12357
+  },
+  "Scott": {
+    "superhost_rate": 0.4343,
+    "listing_count": 175,
+    "median_price": 169.0,
+    "median_review_score": 4.88,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.17,
+    "lat": 44.71268,
+    "lon": -93.44546
+  },
+  "Sherburne": {
+    "superhost_rate": 0.6409,
+    "listing_count": 181,
+    "median_price": 144.0,
+    "median_review_score": 4.9,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.15,
+    "lat": 45.43256,
+    "lon": -93.79992
+  },
+  "Sibley": {
+    "superhost_rate": 0.25,
+    "listing_count": 8,
+    "median_price": 178.0,
+    "median_review_score": 5.0,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 0.81,
+    "lat": 44.49807,
+    "lon": -94.20891
+  },
+  "St. Croix": {
+    "superhost_rate": 0.5488,
+    "listing_count": 215,
+    "median_price": 160.0,
+    "median_review_score": 4.9,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 45.02066,
+    "lon": -92.64746
+  },
+  "Washington": {
+    "superhost_rate": 0.5505,
+    "listing_count": 525,
+    "median_price": 210.0,
+    "median_review_score": 4.91,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.23,
+    "lat": 45.03584,
+    "lon": -92.87902
+  },
+  "Wright": {
+    "superhost_rate": 0.5195,
+    "listing_count": 308,
+    "median_price": 203.0,
+    "median_review_score": 4.92,
+    "median_response_rate": 100.0,
+    "median_reviews_pm": 1.0,
+    "lat": 45.22439,
+    "lon": -93.9769
+  }
+}
