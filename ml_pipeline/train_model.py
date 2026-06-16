@@ -79,9 +79,62 @@ COLS_KEEP = [
 
 DROP_FOR_MODEL = ['id', 'host_id', 'host_since', 'amenities', 'bathrooms_text', 'period', 'scrape_date']
 
+# ── Specific amenity binary flags ────────────────────────────────────────────
+# Selected by combining discriminative power (SH-rate difference ≥14 pp)
+# with coverage (appears in ≥15% of listings across both scrape periods).
+# Key = model feature column name, Value = substring to match (case-insensitive)
+# in the raw amenities string.
+AMENITY_FLAGS = {
+    'amenity_coffee':                  'coffee',
+    'amenity_wine_glasses':            'wine glasses',
+    'amenity_baking_sheet':            'baking sheet',
+    'amenity_extra_pillows_blankets':  'extra pillows and blankets',
+    'amenity_shower_gel':              'shower gel',
+    'amenity_toaster':                 'toaster',
+    'amenity_hair_dryer':              'hair dryer',
+    'amenity_iron':                    'iron',
+    'amenity_cooking_basics':          'cooking basics',
+    'amenity_dishes_silverware':       'dishes and silverware',
+    'amenity_long_term_stays':         'long term stays allowed',
+    'amenity_self_check_in':           'self check-in',
+    'amenity_dining_table':            'dining table',
+    'amenity_private_entrance':        'private entrance',
+    'amenity_essentials':              'essentials',
+    'amenity_hangers':                 'hangers',
+    'amenity_room_darkening_shades':   'room-darkening shades',
+    'amenity_dishwasher':              'dishwasher',
+    'amenity_dedicated_workspace':     'dedicated workspace',
+    'amenity_hot_water':               'hot water',
+}
+
+# Human-readable labels for the frontend checklist UI
+AMENITY_LABELS = {
+    'amenity_coffee':                  'Coffee',
+    'amenity_wine_glasses':            'Wine Glasses',
+    'amenity_baking_sheet':            'Baking Sheet',
+    'amenity_extra_pillows_blankets':  'Extra Pillows & Blankets',
+    'amenity_shower_gel':              'Shower Gel',
+    'amenity_toaster':                 'Toaster',
+    'amenity_hair_dryer':              'Hair Dryer',
+    'amenity_iron':                    'Iron',
+    'amenity_cooking_basics':          'Cooking Basics',
+    'amenity_dishes_silverware':       'Dishes & Silverware',
+    'amenity_long_term_stays':         'Long-Term Stays Allowed',
+    'amenity_self_check_in':           'Self Check-In',
+    'amenity_dining_table':            'Dining Table',
+    'amenity_private_entrance':        'Private Entrance',
+    'amenity_essentials':              'Essentials',
+    'amenity_hangers':                 'Hangers',
+    'amenity_room_darkening_shades':   'Room-Darkening Shades',
+    'amenity_dishwasher':              'Dishwasher',
+    'amenity_dedicated_workspace':     'Dedicated Workspace',
+    'amenity_hot_water':               'Hot Water',
+}
+
 SLIDER_FEATURES = [
     'review_scores_rating', 'reviews_per_month', 'host_response_rate',
-    'host_acceptance_rate', 'host_experience_years', 'host_listings_count', 'num_amenities'
+    'host_acceptance_rate', 'host_experience_years', 'host_listings_count',
+    *AMENITY_FLAGS.keys(),   # 20 binary amenity flags
 ]
 
 SLIDER_CONFIG = {
@@ -91,7 +144,6 @@ SLIDER_CONFIG = {
     'host_acceptance_rate':  {'label': 'Acceptance Rate',        'min': 0.0,  'max': 100.0,'step': 1.0, 'unit': '%'},
     'host_experience_years': {'label': 'Host Experience',        'min': 0.0,  'max': 20.0, 'step': 0.5, 'unit': 'yrs'},
     'host_listings_count':   {'label': 'Number of Listings',     'min': 1.0,  'max': 50.0, 'step': 1.0, 'unit': ''},
-    'num_amenities':         {'label': 'Number of Amenities',    'min': 0.0,  'max': 80.0, 'step': 1.0, 'unit': ''},
 }
 
 # ─────────────────────────────────────────────
@@ -135,8 +187,14 @@ def load_listings(filepath, scrape_date, period_label):
         df['num_amenities'] = df['amenities'].apply(
             lambda x: len(re.findall(r'''["']([^"']+)["']''', str(x)))
         )
+        # ── Specific amenity binary flags (0/1 per listing) ───────────────
+        amenity_lower = df['amenities'].astype(str).str.lower()
+        for col, match in AMENITY_FLAGS.items():
+            df[col] = amenity_lower.str.contains(match, regex=False).astype(int)
     else:
         df['num_amenities'] = 0
+        for col in AMENITY_FLAGS:
+            df[col] = 0
     df['num_amenities'] = df['num_amenities'].fillna(0)
 
     return df
@@ -509,6 +567,18 @@ def main():
             superhost_avg[f]     = round(float(X_tr_sh[f].median()), 3)
             non_superhost_avg[f] = round(float(X_tr_nsh[f].median()), 3)
 
+    # ── Amenity superhost-rate table (for UI tooltips) ───────────────────
+    amenity_superhost_rates = {}
+    for col in AMENITY_FLAGS:
+        if col in X_tr_sh.columns:
+            sh_rate  = round(float(X_tr_sh[col].mean()), 4)
+            nsh_rate = round(float(X_tr_nsh[col].mean()), 4)
+            amenity_superhost_rates[col] = {
+                'sh_pct':  round(sh_rate  * 100, 1),
+                'nsh_pct': round(nsh_rate * 100, 1),
+                'diff':    round((sh_rate - nsh_rate) * 100, 1),
+            }
+
     # ── 16. Scale curve (using best available tree model) ─────────────
     scale_curve = []
     sample_row = feat_defaults.copy()
@@ -527,26 +597,28 @@ def main():
     print(f"  Reference tree model: '{_tree_ref_name}' -> xgb_model.joblib")
 
     metadata = {
-        'best_model_name':     best_name,
-        'numeric_features':    numeric_features,
-        'categorical_features':categorical_features,
-        'feature_defaults':    feat_defaults,
-        'feature_importance':  top_features,
-        'model_performance':   results,
-        'superhost_rate':      round(float(y.mean()), 4),
-        'superhost_avg':       superhost_avg,
-        'non_superhost_avg':   non_superhost_avg,
-        'slider_features':     SLIDER_FEATURES,
-        'slider_config':       SLIDER_CONFIG,
-        'scale_curve':         scale_curve,
-        'total_listings':      int(len(df)),
-        'training_date':       datetime.now().isoformat(),
+        'best_model_name':          best_name,
+        'numeric_features':         numeric_features,
+        'categorical_features':     categorical_features,
+        'feature_defaults':         feat_defaults,
+        'feature_importance':       top_features,
+        'model_performance':        results,
+        'superhost_rate':           round(float(y.mean()), 4),
+        'superhost_avg':            superhost_avg,
+        'non_superhost_avg':        non_superhost_avg,
+        'slider_features':          SLIDER_FEATURES,
+        'slider_config':            SLIDER_CONFIG,
+        'amenity_flags':            AMENITY_LABELS,   # col_name → display label
+        'amenity_superhost_rates':  amenity_superhost_rates,
+        'scale_curve':              scale_curve,
+        'total_listings':           int(len(df)),
+        'training_date':            datetime.now().isoformat(),
     }
     with open(OUT_DIR / 'model_metadata.json', 'w') as f:
         json.dump(metadata, f, indent=2)
 
     print("  [OK] best_model.joblib")
-    print(f"  [OK] xgb_model.joblib  ({_tree_ref_name} — used for feature importance)")
+    print(f"  [OK] xgb_model.joblib  ({_tree_ref_name} - used for feature importance)")
     print("  [OK] model_metadata.json")
 
     # ── 18. Final comparison table ───────────────────────────────────

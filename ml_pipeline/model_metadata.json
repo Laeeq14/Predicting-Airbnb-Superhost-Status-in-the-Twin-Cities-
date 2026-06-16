@@ -1,5 +1,5 @@
 {
-  "best_model_name": "LightGBM (Tuned)",
+  "best_model_name": "Random Forest",
   "numeric_features": [
     "host_response_rate",
     "host_acceptance_rate",
@@ -23,6 +23,26 @@
     "reviews_per_month",
     "host_experience_years",
     "num_amenities",
+    "amenity_coffee",
+    "amenity_wine_glasses",
+    "amenity_baking_sheet",
+    "amenity_extra_pillows_blankets",
+    "amenity_shower_gel",
+    "amenity_toaster",
+    "amenity_hair_dryer",
+    "amenity_iron",
+    "amenity_cooking_basics",
+    "amenity_dishes_silverware",
+    "amenity_long_term_stays",
+    "amenity_self_check_in",
+    "amenity_dining_table",
+    "amenity_private_entrance",
+    "amenity_essentials",
+    "amenity_hangers",
+    "amenity_room_darkening_shades",
+    "amenity_dishwasher",
+    "amenity_dedicated_workspace",
+    "amenity_hot_water",
     "review_count",
     "avg_comment_length",
     "number_of_reviews_log1p",
@@ -58,6 +78,26 @@
     "reviews_per_month": 1.23,
     "host_experience_years": 7.874058863791923,
     "num_amenities": 46.0,
+    "amenity_coffee": 1.0,
+    "amenity_wine_glasses": 1.0,
+    "amenity_baking_sheet": 1.0,
+    "amenity_extra_pillows_blankets": 1.0,
+    "amenity_shower_gel": 0.0,
+    "amenity_toaster": 1.0,
+    "amenity_hair_dryer": 1.0,
+    "amenity_iron": 1.0,
+    "amenity_cooking_basics": 1.0,
+    "amenity_dishes_silverware": 1.0,
+    "amenity_long_term_stays": 1.0,
+    "amenity_self_check_in": 1.0,
+    "amenity_dining_table": 1.0,
+    "amenity_private_entrance": 1.0,
+    "amenity_essentials": 1.0,
+    "amenity_hangers": 1.0,
+    "amenity_room_darkening_shades": 0.0,
+    "amenity_dishwasher": 1.0,
+    "amenity_dedicated_workspace": 1.0,
+    "amenity_hot_water": 1.0,
     "review_count": 23.0,
     "avg_comment_length": 214.72222222222223,
     "number_of_reviews_log1p": 3.091042453358316,
@@ -71,150 +111,162 @@
   "feature_importance": [
     {
       "feature": "review_scores_rating",
-      "importance": 0.07272
-    },
-    {
-      "feature": "property_type_Entire serviced apartment",
-      "importance": 0.05463
-    },
-    {
-      "feature": "neighbourhood_cleansed_Isanti",
-      "importance": 0.04541
-    },
-    {
-      "feature": "host_listings_count",
-      "importance": 0.04263
-    },
-    {
-      "feature": "neighbourhood_cleansed_Pierce",
-      "importance": 0.037
-    },
-    {
-      "feature": "property_type_Private room in rental unit",
-      "importance": 0.03603
-    },
-    {
-      "feature": "host_response_rate",
-      "importance": 0.03178
-    },
-    {
-      "feature": "host_total_listings_count",
-      "importance": 0.0299
-    },
-    {
-      "feature": "property_type_Private room in bed and breakfast",
-      "importance": 0.02661
-    },
-    {
-      "feature": "number_of_reviews",
-      "importance": 0.02476
-    },
-    {
-      "feature": "property_type_Room in hotel",
-      "importance": 0.02368
-    },
-    {
-      "feature": "room_type_Private room",
-      "importance": 0.02298
-    },
-    {
-      "feature": "neighbourhood_cleansed_Anoka",
-      "importance": 0.02265
-    },
-    {
-      "feature": "neighbourhood_cleansed_Sherburne",
-      "importance": 0.02044
-    },
-    {
-      "feature": "room_type_Entire home/apt",
-      "importance": 0.01945
-    },
-    {
-      "feature": "property_type_Private room in home",
-      "importance": 0.01863
+      "importance": 0.06413
     },
     {
       "feature": "neighbourhood_cleansed_Carver",
-      "importance": 0.01753
+      "importance": 0.04095
+    },
+    {
+      "feature": "host_listings_count",
+      "importance": 0.03801
+    },
+    {
+      "feature": "property_type_Entire serviced apartment",
+      "importance": 0.03686
+    },
+    {
+      "feature": "room_type_Private room",
+      "importance": 0.02684
+    },
+    {
+      "feature": "neighbourhood_cleansed_Pierce",
+      "importance": 0.02618
+    },
+    {
+      "feature": "host_total_listings_count",
+      "importance": 0.02582
+    },
+    {
+      "feature": "host_response_rate",
+      "importance": 0.02571
+    },
+    {
+      "feature": "amenity_hair_dryer",
+      "importance": 0.02561
+    },
+    {
+      "feature": "property_type_Private room in rental unit",
+      "importance": 0.02551
+    },
+    {
+      "feature": "amenity_baking_sheet",
+      "importance": 0.0223
+    },
+    {
+      "feature": "number_of_reviews",
+      "importance": 0.02196
+    },
+    {
+      "feature": "room_type_Entire home/apt",
+      "importance": 0.01806
+    },
+    {
+      "feature": "property_type_Room in hotel",
+      "importance": 0.01741
+    },
+    {
+      "feature": "property_type_Private room in bed and breakfast",
+      "importance": 0.01714
+    },
+    {
+      "feature": "neighbourhood_cleansed_Anoka",
+      "importance": 0.01597
+    },
+    {
+      "feature": "neighbourhood_cleansed_Sherburne",
+      "importance": 0.01534
     },
     {
       "feature": "property_type_Entire condo",
-      "importance": 0.01686
+      "importance": 0.01502
     },
     {
-      "feature": "host_acceptance_rate",
-      "importance": 0.01642
+      "feature": "property_type_Private room in home",
+      "importance": 0.01492
     },
     {
-      "feature": "neighbourhood_cleansed_Scott",
-      "importance": 0.01624
+      "feature": "neighbourhood_cleansed_Washington",
+      "importance": 0.01313
     }
   ],
   "model_performance": {
     "Logistic Regression": {
-      "accuracy": 0.7385,
-      "roc_auc": 0.8148,
-      "f1": 0.7576,
-      "precision": 0.7339,
-      "recall": 0.7828
+      "accuracy": 0.7439,
+      "roc_auc": 0.8168,
+      "f1": 0.7611,
+      "precision": 0.7415,
+      "recall": 0.7818
     },
     "Decision Tree": {
-      "accuracy": 0.7636,
-      "roc_auc": 0.8102,
-      "f1": 0.7765,
-      "precision": 0.7665,
-      "recall": 0.7869
+      "accuracy": 0.7615,
+      "roc_auc": 0.8194,
+      "f1": 0.7792,
+      "precision": 0.7538,
+      "recall": 0.8064
     },
     "Random Forest": {
-      "accuracy": 0.7872,
-      "roc_auc": 0.8661,
-      "f1": 0.7959
+      "accuracy": 0.7925,
+      "roc_auc": 0.8703,
+      "f1": 0.8026,
+      "precision": 0.797,
+      "recall": 0.8084
     },
     "XGBoost": {
-      "accuracy": 0.7749,
-      "roc_auc": 0.8541,
-      "f1": 0.7881,
-      "precision": 0.7745,
-      "recall": 0.8023
+      "accuracy": 0.7647,
+      "roc_auc": 0.8463,
+      "f1": 0.7757,
+      "precision": 0.7718,
+      "recall": 0.7797
     },
     "LightGBM": {
-      "accuracy": 0.7813,
-      "roc_auc": 0.8561,
-      "f1": 0.795
+      "accuracy": 0.7749,
+      "roc_auc": 0.854,
+      "f1": 0.7885,
+      "precision": 0.7734,
+      "recall": 0.8043
     },
     "CatBoost": {
-      "accuracy": 0.785,
-      "roc_auc": 0.8608,
-      "f1": 0.798
-    },
-    "Random Forest (Tuned)": {
-      "accuracy": 0.7845,
-      "roc_auc": 0.8618,
-      "f1": 0.7966
-    },
-    "XGBoost (Tuned)": {
-      "accuracy": 0.7765,
-      "roc_auc": 0.857,
-      "f1": 0.791,
-      "precision": 0.7725,
-      "recall": 0.8105
-    },
-    "LightGBM (Tuned)": {
-      "accuracy": 0.7845,
-      "roc_auc": 0.8675,
-      "f1": 0.7964,
-      "precision": 0.7856,
+      "accuracy": 0.7802,
+      "roc_auc": 0.8621,
+      "f1": 0.7932,
+      "precision": 0.7794,
       "recall": 0.8074
     },
+    "Random Forest (Tuned)": {
+      "accuracy": 0.7882,
+      "roc_auc": 0.8663,
+      "f1": 0.799,
+      "precision": 0.7918,
+      "recall": 0.8064
+    },
+    "XGBoost (Tuned)": {
+      "accuracy": 0.7749,
+      "roc_auc": 0.8537,
+      "f1": 0.7904,
+      "precision": 0.7686,
+      "recall": 0.8135
+    },
+    "LightGBM (Tuned)": {
+      "accuracy": 0.7754,
+      "roc_auc": 0.855,
+      "f1": 0.7885,
+      "precision": 0.7752,
+      "recall": 0.8023
+    },
     "CatBoost (Tuned)": {
-      "accuracy": 0.7717,
-      "roc_auc": 0.8563,
-      "f1": 0.7834
+      "accuracy": 0.7797,
+      "roc_auc": 0.8595,
+      "f1": 0.7948,
+      "precision": 0.7733,
+      "recall": 0.8176
     },
     "Voting Ensemble": {
-      "accuracy": 0.785,
-      "roc_auc": 0.8658,
-      "f1": 0.7978
+      "accuracy": 0.7813,
+      "roc_auc": 0.866,
+      "f1": 0.7952,
+      "precision": 0.7777,
+      "recall": 0.8135
     }
   },
   "superhost_rate": 0.5222,
@@ -225,7 +277,26 @@
     "host_acceptance_rate": 99.0,
     "host_experience_years": 8.58,
     "host_listings_count": 3.0,
-    "num_amenities": 50.0
+    "amenity_coffee": 1.0,
+    "amenity_wine_glasses": 1.0,
+    "amenity_baking_sheet": 1.0,
+    "amenity_extra_pillows_blankets": 1.0,
+    "amenity_shower_gel": 1.0,
+    "amenity_toaster": 1.0,
+    "amenity_hair_dryer": 1.0,
+    "amenity_iron": 1.0,
+    "amenity_cooking_basics": 1.0,
+    "amenity_dishes_silverware": 1.0,
+    "amenity_long_term_stays": 1.0,
+    "amenity_self_check_in": 1.0,
+    "amenity_dining_table": 1.0,
+    "amenity_private_entrance": 1.0,
+    "amenity_essentials": 1.0,
+    "amenity_hangers": 1.0,
+    "amenity_room_darkening_shades": 0.0,
+    "amenity_dishwasher": 1.0,
+    "amenity_dedicated_workspace": 1.0,
+    "amenity_hot_water": 1.0
   },
   "non_superhost_avg": {
     "review_scores_rating": 4.75,
@@ -234,7 +305,26 @@
     "host_acceptance_rate": 98.0,
     "host_experience_years": 6.62,
     "host_listings_count": 2.0,
-    "num_amenities": 40.0
+    "amenity_coffee": 1.0,
+    "amenity_wine_glasses": 0.0,
+    "amenity_baking_sheet": 0.0,
+    "amenity_extra_pillows_blankets": 1.0,
+    "amenity_shower_gel": 0.0,
+    "amenity_toaster": 1.0,
+    "amenity_hair_dryer": 1.0,
+    "amenity_iron": 1.0,
+    "amenity_cooking_basics": 1.0,
+    "amenity_dishes_silverware": 1.0,
+    "amenity_long_term_stays": 0.0,
+    "amenity_self_check_in": 1.0,
+    "amenity_dining_table": 1.0,
+    "amenity_private_entrance": 0.0,
+    "amenity_essentials": 1.0,
+    "amenity_hangers": 1.0,
+    "amenity_room_darkening_shades": 0.0,
+    "amenity_dishwasher": 0.0,
+    "amenity_dedicated_workspace": 1.0,
+    "amenity_hot_water": 1.0
   },
   "slider_features": [
     "review_scores_rating",
@@ -243,7 +333,26 @@
     "host_acceptance_rate",
     "host_experience_years",
     "host_listings_count",
-    "num_amenities"
+    "amenity_coffee",
+    "amenity_wine_glasses",
+    "amenity_baking_sheet",
+    "amenity_extra_pillows_blankets",
+    "amenity_shower_gel",
+    "amenity_toaster",
+    "amenity_hair_dryer",
+    "amenity_iron",
+    "amenity_cooking_basics",
+    "amenity_dishes_silverware",
+    "amenity_long_term_stays",
+    "amenity_self_check_in",
+    "amenity_dining_table",
+    "amenity_private_entrance",
+    "amenity_essentials",
+    "amenity_hangers",
+    "amenity_room_darkening_shades",
+    "amenity_dishwasher",
+    "amenity_dedicated_workspace",
+    "amenity_hot_water"
   ],
   "slider_config": {
     "review_scores_rating": {
@@ -287,217 +396,334 @@
       "max": 50.0,
       "step": 1.0,
       "unit": ""
+    }
+  },
+  "amenity_flags": {
+    "amenity_coffee": "Coffee",
+    "amenity_wine_glasses": "Wine Glasses",
+    "amenity_baking_sheet": "Baking Sheet",
+    "amenity_extra_pillows_blankets": "Extra Pillows & Blankets",
+    "amenity_shower_gel": "Shower Gel",
+    "amenity_toaster": "Toaster",
+    "amenity_hair_dryer": "Hair Dryer",
+    "amenity_iron": "Iron",
+    "amenity_cooking_basics": "Cooking Basics",
+    "amenity_dishes_silverware": "Dishes & Silverware",
+    "amenity_long_term_stays": "Long-Term Stays Allowed",
+    "amenity_self_check_in": "Self Check-In",
+    "amenity_dining_table": "Dining Table",
+    "amenity_private_entrance": "Private Entrance",
+    "amenity_essentials": "Essentials",
+    "amenity_hangers": "Hangers",
+    "amenity_room_darkening_shades": "Room-Darkening Shades",
+    "amenity_dishwasher": "Dishwasher",
+    "amenity_dedicated_workspace": "Dedicated Workspace",
+    "amenity_hot_water": "Hot Water"
+  },
+  "amenity_superhost_rates": {
+    "amenity_coffee": {
+      "sh_pct": 92.9,
+      "nsh_pct": 75.0,
+      "diff": 17.9
     },
-    "num_amenities": {
-      "label": "Number of Amenities",
-      "min": 0.0,
-      "max": 80.0,
-      "step": 1.0,
-      "unit": ""
+    "amenity_wine_glasses": {
+      "sh_pct": 65.6,
+      "nsh_pct": 39.8,
+      "diff": 25.8
+    },
+    "amenity_baking_sheet": {
+      "sh_pct": 62.2,
+      "nsh_pct": 37.3,
+      "diff": 24.9
+    },
+    "amenity_extra_pillows_blankets": {
+      "sh_pct": 76.6,
+      "nsh_pct": 52.3,
+      "diff": 24.3
+    },
+    "amenity_shower_gel": {
+      "sh_pct": 56.3,
+      "nsh_pct": 34.4,
+      "diff": 21.9
+    },
+    "amenity_toaster": {
+      "sh_pct": 74.2,
+      "nsh_pct": 52.3,
+      "diff": 21.9
+    },
+    "amenity_hair_dryer": {
+      "sh_pct": 89.6,
+      "nsh_pct": 68.1,
+      "diff": 21.5
+    },
+    "amenity_iron": {
+      "sh_pct": 85.4,
+      "nsh_pct": 65.6,
+      "diff": 19.8
+    },
+    "amenity_cooking_basics": {
+      "sh_pct": 87.3,
+      "nsh_pct": 68.5,
+      "diff": 18.8
+    },
+    "amenity_dishes_silverware": {
+      "sh_pct": 91.2,
+      "nsh_pct": 72.3,
+      "diff": 18.9
+    },
+    "amenity_long_term_stays": {
+      "sh_pct": 65.2,
+      "nsh_pct": 46.8,
+      "diff": 18.3
+    },
+    "amenity_self_check_in": {
+      "sh_pct": 83.5,
+      "nsh_pct": 66.2,
+      "diff": 17.2
+    },
+    "amenity_dining_table": {
+      "sh_pct": 67.8,
+      "nsh_pct": 51.4,
+      "diff": 16.4
+    },
+    "amenity_private_entrance": {
+      "sh_pct": 58.7,
+      "nsh_pct": 41.9,
+      "diff": 16.8
+    },
+    "amenity_essentials": {
+      "sh_pct": 86.3,
+      "nsh_pct": 71.5,
+      "diff": 14.8
+    },
+    "amenity_hangers": {
+      "sh_pct": 89.7,
+      "nsh_pct": 74.9,
+      "diff": 14.8
+    },
+    "amenity_room_darkening_shades": {
+      "sh_pct": 44.5,
+      "nsh_pct": 28.9,
+      "diff": 15.6
+    },
+    "amenity_dishwasher": {
+      "sh_pct": 64.6,
+      "nsh_pct": 49.8,
+      "diff": 14.8
+    },
+    "amenity_dedicated_workspace": {
+      "sh_pct": 73.4,
+      "nsh_pct": 63.6,
+      "diff": 9.8
+    },
+    "amenity_hot_water": {
+      "sh_pct": 95.5,
+      "nsh_pct": 77.9,
+      "diff": 17.6
     }
   },
   "scale_curve": [
     {
       "listings": 1,
-      "probability": 0.676
+      "probability": 0.5029
     },
     {
       "listings": 2,
-      "probability": 0.8927
+      "probability": 0.8501
     },
     {
       "listings": 3,
-      "probability": 0.9433
+      "probability": 0.8959
     },
     {
       "listings": 4,
-      "probability": 0.94
+      "probability": 0.8817
     },
     {
       "listings": 5,
-      "probability": 0.9403
+      "probability": 0.9029
     },
     {
       "listings": 6,
-      "probability": 0.9363
+      "probability": 0.8848
     },
     {
       "listings": 7,
-      "probability": 0.9455
+      "probability": 0.9004
     },
     {
       "listings": 8,
-      "probability": 0.9297
+      "probability": 0.8919
     },
     {
       "listings": 9,
-      "probability": 0.9297
+      "probability": 0.8955
     },
     {
       "listings": 10,
-      "probability": 0.9322
+      "probability": 0.9049
     },
     {
       "listings": 11,
-      "probability": 0.9549
+      "probability": 0.9209
     },
     {
       "listings": 12,
-      "probability": 0.957
+      "probability": 0.9245
     },
     {
       "listings": 13,
-      "probability": 0.9518
+      "probability": 0.9245
     },
     {
       "listings": 14,
-      "probability": 0.943
+      "probability": 0.9181
     },
     {
       "listings": 15,
-      "probability": 0.943
+      "probability": 0.9181
     },
     {
       "listings": 16,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 17,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 18,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 19,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 20,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 21,
-      "probability": 0.9444
+      "probability": 0.9181
     },
     {
       "listings": 22,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 23,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 24,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 25,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 26,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 27,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 28,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 29,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 30,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 31,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 32,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 33,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 34,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 35,
-      "probability": 0.9872
+      "probability": 0.974
     },
     {
       "listings": 36,
-      "probability": 0.9848
+      "probability": 0.9668
     },
     {
       "listings": 37,
-      "probability": 0.9848
+      "probability": 0.9668
     },
     {
       "listings": 38,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 39,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 40,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 41,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 42,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 43,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 44,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 45,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 46,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 47,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 48,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 49,
-      "probability": 0.9829
+      "probability": 0.9426
     },
     {
       "listings": 50,
-      "probability": 0.9829
+      "probability": 0.9426
     }
   ],
   "total_listings": 10407,
-  "training_date": "2026-06-02T20:27:16.360870"
+  "training_date": "2026-06-15T19:48:44.546335"
 }

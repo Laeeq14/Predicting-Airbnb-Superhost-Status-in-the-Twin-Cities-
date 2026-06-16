@@ -42,8 +42,54 @@ if not GROQ_API_KEY:
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
 MIN_REVIEWS   = 5
-AT_RISK_N     = 20   # number of listings to surface in the UI
+AT_RISK_N     = 20   # number of listings to surface in the UI per view
 REVIEW_N      = 5    # last N reviews sent to LLM
+
+# Amenity flags (mirrors train_model.AMENITY_FLAGS) — used to parse raw CSV
+AMENITY_FLAGS = {
+    'amenity_coffee':                  'coffee',
+    'amenity_wine_glasses':            'wine glasses',
+    'amenity_baking_sheet':            'baking sheet',
+    'amenity_extra_pillows_blankets':  'extra pillows and blankets',
+    'amenity_shower_gel':              'shower gel',
+    'amenity_toaster':                 'toaster',
+    'amenity_hair_dryer':              'hair dryer',
+    'amenity_iron':                    'iron',
+    'amenity_cooking_basics':          'cooking basics',
+    'amenity_dishes_silverware':       'dishes and silverware',
+    'amenity_long_term_stays':         'long term stays allowed',
+    'amenity_self_check_in':           'self check-in',
+    'amenity_dining_table':            'dining table',
+    'amenity_private_entrance':        'private entrance',
+    'amenity_essentials':              'essentials',
+    'amenity_hangers':                 'hangers',
+    'amenity_room_darkening_shades':   'room-darkening shades',
+    'amenity_dishwasher':              'dishwasher',
+    'amenity_dedicated_workspace':     'dedicated workspace',
+    'amenity_hot_water':               'hot water',
+}
+AMENITY_LABELS = {
+    'amenity_coffee':                  'Coffee',
+    'amenity_wine_glasses':            'Wine Glasses',
+    'amenity_baking_sheet':            'Baking Sheet',
+    'amenity_extra_pillows_blankets':  'Extra Pillows & Blankets',
+    'amenity_shower_gel':              'Shower Gel',
+    'amenity_toaster':                 'Toaster',
+    'amenity_hair_dryer':              'Hair Dryer',
+    'amenity_iron':                    'Iron',
+    'amenity_cooking_basics':          'Cooking Basics',
+    'amenity_dishes_silverware':       'Dishes & Silverware',
+    'amenity_long_term_stays':         'Long-Term Stays Allowed',
+    'amenity_self_check_in':           'Self Check-In',
+    'amenity_dining_table':            'Dining Table',
+    'amenity_private_entrance':        'Private Entrance',
+    'amenity_essentials':              'Essentials',
+    'amenity_hangers':                 'Hangers',
+    'amenity_room_darkening_shades':   'Room-Darkening Shades',
+    'amenity_dishwasher':              'Dishwasher',
+    'amenity_dedicated_workspace':     'Dedicated Workspace',
+    'amenity_hot_water':               'Hot Water',
+}
 
 
 # ── Pydantic schemas ─────────────────────────────────────────────────────────
@@ -83,6 +129,7 @@ _LISTING_COLS = [
     "number_of_reviews", "review_scores_cleanliness",
     "review_scores_communication", "review_scores_value",
     "property_type", "room_type",
+    "amenities",   # needed to derive specific amenity flags
 ]
 
 
@@ -153,7 +200,11 @@ def _build_feature_row(listing_row: pd.Series, meta: dict) -> pd.DataFrame:
 
     # Derived fields
     defaults["host_experience_years"] = meta["feature_defaults"].get("host_experience_years", 5.0)
-    defaults["num_amenities"] = meta["feature_defaults"].get("num_amenities", 30.0)
+    # Parse amenity flags from raw amenities string (replaces generic num_amenities)
+    amenity_str = str(listing_row.get('amenities', '')).lower()
+    for col, match in AMENITY_FLAGS.items():
+        defaults[col] = 1 if match in amenity_str else 0
+    defaults["num_amenities"] = float(sum(defaults.get(c, 0) for c in AMENITY_FLAGS))
     defaults["review_count"]  = defaults.get("number_of_reviews", defaults.get("review_count", 20.0))
     defaults["avg_comment_length"] = meta["feature_defaults"].get("avg_comment_length", 200.0)
 
@@ -193,10 +244,14 @@ def _compute_shap_for_listing(listing_row: pd.Series, pipeline, meta: dict) -> d
     explainer = shap.TreeExplainer(clf)
     shap_vals = explainer.shap_values(X_transformed)
 
-    # SHAP ≥0.45: binary LightGBM returns list [neg_class, pos_class], each (n_samples, n_features)
-    # SHAP <0.45: returns 2D array (n_samples, n_features) for positive class
+    # SHAP return shapes vary by model/version:
+    #   list of 2 arrays  -> [neg_class, pos_class], each (n_samples, n_features)
+    #   3D ndarray        -> (n_samples, n_features, n_classes)  [RF with newer SHAP]
+    #   2D ndarray        -> (n_samples, n_features)              [already positive class]
     if isinstance(shap_vals, list):
-        sv = np.array(shap_vals[1]).flatten()   # positive class (Superhost)
+        sv = np.array(shap_vals[1]).flatten()          # positive class (Superhost)
+    elif isinstance(shap_vals, np.ndarray) and shap_vals.ndim == 3:
+        sv = shap_vals[0, :, 1]                        # 3D: sample 0, positive class
     else:
         sv = np.array(shap_vals).flatten()
 
@@ -232,60 +287,118 @@ def build_agent_data(pipeline, meta: dict) -> None:
     valid_ids = set(reviews_df["listing_id"].unique())
     at_risk   = at_risk[at_risk["id"].isin(valid_ids)].copy()
 
-    # Run SHAP on a sample to find where rating is the dominant negative driver
-    sample = at_risk.sample(min(200, len(at_risk)), random_state=42)
+    # Run SHAP on a sample to find where rating is the dominant negative driver.
+    # Limit to 100 listings — enough to surface a rich at-risk pool with fast load.
+    sample = at_risk.sample(min(100, len(at_risk)), random_state=42)
 
     # Build SHAP explainer ONCE (expensive) — reuse for all listings
-    preprocessor = pipeline["preproc"]
-    clf          = pipeline["clf"]
-    num_names    = meta["numeric_features"]
+    preprocessor    = pipeline["preproc"]
+    clf             = pipeline["clf"]
+    num_names       = meta["numeric_features"]
     cat_transformer = preprocessor.named_transformers_["cat"]
     ohe             = cat_transformer.named_steps["ohe"]
     cat_names       = list(ohe.get_feature_names_out(meta["categorical_features"]))
     all_feat_names  = num_names + cat_names
     explainer       = shap.TreeExplainer(clf)
 
-    ranked_listings = []
+    # ── Vectorised batch SHAP (single call, ~10x faster than per-row) ──
+    # Preprocess all rows into a single matrix first, then call shap_values once.
+    row_list   = []
+    valid_rows = []
     for _, row in sample.iterrows():
         try:
-            X      = _build_feature_row(row, meta)
-            X_np   = preprocessor.transform(X)
-            X_tf   = pd.DataFrame(X_np, columns=all_feat_names)
-            sv     = explainer.shap_values(X_tf)
-            sv_pos = np.array(sv[1] if isinstance(sv, list) else sv).flatten()
-            shap_map = dict(zip(all_feat_names, sv_pos))
-
-            rating_shap = shap_map.get("review_scores_rating", 0.0)
-            if rating_shap < -0.05:
-                prob = float(pipeline.predict_proba(_build_feature_row(row, meta))[0, 1])
-                ranked_listings.append({
-                    "listing_id":   int(row["id"]),
-                    "listing_name": str(row.get("name", "Unknown"))[:60],
-                    "host_name":    str(row.get("host_name", "Unknown")),
-                    "county":       str(row.get("neighbourhood_cleansed", "—")),
-                    "rating":       round(float(row["review_scores_rating"]), 2),
-                    "review_count": int(row["number_of_reviews"]),
-                    "probability":  round(prob, 3),
-                    "rating_shap":  round(rating_shap, 4),
-                })
+            X    = _build_feature_row(row, meta)
+            X_np = preprocessor.transform(X)
+            row_list.append(X_np[0])
+            valid_rows.append(row)
         except Exception as exc:
-            logger.debug(f"Agent SHAP skipped listing {row.get('id')}: {exc}")
+            logger.debug(f"Agent preproc skipped listing {row.get('id')}: {exc}")
 
-    # Sort by worst probability first, take top N
+    ranked_listings = []
+    if not row_list:
+        logger.warning("Agent: no listings could be preprocessed for SHAP.")
+    else:
+        X_batch = pd.DataFrame(row_list, columns=all_feat_names)
+
+        # Single batch SHAP call
+        try:
+            sv_batch = explainer.shap_values(X_batch)
+        except Exception as exc:
+            logger.error(f"Agent: SHAP batch failed: {exc}")
+            sv_batch = None
+
+        if sv_batch is not None:
+            # X_batch is already preprocessed — use clf directly (not pipeline)
+            # to avoid re-running the OHE preprocessor on already-transformed data
+            probs_batch = clf.predict_proba(X_batch.values)[:, 1]
+
+            # Handle all SHAP return shapes:
+            #   list of 2 arrays  -> [neg_class, pos_class], each (n, features)
+            #   3D ndarray        -> (n, features, n_classes)  [RF with newer SHAP]
+            #   2D ndarray        -> (n, features)              [already positive class]
+            if isinstance(sv_batch, list):
+                sv_pos_batch = np.array(sv_batch[1])       # positive class
+            elif isinstance(sv_batch, np.ndarray) and sv_batch.ndim == 3:
+                sv_pos_batch = sv_batch[:, :, 1]           # 3D: slice positive class
+            else:
+                sv_pos_batch = np.array(sv_batch)          # 2D: already positive class
+
+            for i, row in enumerate(valid_rows):
+                try:
+                    sv_pos   = sv_pos_batch[i]
+                    shap_map = dict(zip(all_feat_names, sv_pos))
+
+                    rating_shap = shap_map.get("review_scores_rating", 0.0)
+                    if rating_shap < -0.05:
+                        prob = float(probs_batch[i])
+                        # Use listing row directly to detect absent amenities
+                        amenity_str = str(row.get("amenities", "")).lower()
+                        missing_amenity_labels = [
+                            AMENITY_LABELS[col]
+                            for col, match in AMENITY_FLAGS.items()
+                            if shap_map.get(col, 0) < -0.03 and match not in amenity_str
+                        ]
+                        ranked_listings.append({
+                            "listing_id":        int(row["id"]),
+                            "listing_name":      str(row.get("name", "Unknown"))[:60],
+                            "host_name":         str(row.get("host_name", "Unknown")),
+                            "county":            str(row.get("neighbourhood_cleansed", "—")),
+                            "rating":            round(float(row["review_scores_rating"]), 2),
+                            "review_count":      int(row["number_of_reviews"]),
+                            "probability":       round(prob, 3),
+                            "rating_shap":       round(rating_shap, 4),
+                            "missing_amenities": missing_amenity_labels[:3],
+                        })
+                except Exception as exc:
+                    logger.debug(f"Agent SHAP skipped listing {row.get('id')}: {exc}")
+
+    # Sort by worst probability first
     # Filter out listing IDs > JS Number.MAX_SAFE_INTEGER (2^53-1)
     # to avoid silent precision loss when the ID is serialised to JSON in the browser.
     JS_MAX_SAFE = 9_007_199_254_740_991
     ranked_listings = [r for r in ranked_listings if r["listing_id"] <= JS_MAX_SAFE]
     ranked_listings.sort(key=lambda x: x["probability"])
-    top_listings = ranked_listings[:AT_RISK_N]
 
-    _agent_cache["at_risk"]   = top_listings
-    _agent_cache["reviews_df"] = reviews_df
-    logger.info(f"Agent: {len(top_listings)} listings surfaced after SHAP filter")
+    # Store ALL ranked listings so per-county slicing can draw top N from each county
+    _agent_cache["at_risk_all"] = ranked_listings
+    _agent_cache["at_risk"]     = ranked_listings[:AT_RISK_N]   # global top-20 (default)
+    _agent_cache["reviews_df"]  = reviews_df
+    logger.info(f"Agent: {len(ranked_listings)} listings ranked; top {AT_RISK_N} surfaced globally")
 
 
-def get_at_risk_listings() -> list[dict]:
+def get_at_risk_listings(county: str | None = None) -> list[dict]:
+    """Return top AT_RISK_N listings, optionally filtered to a single county."""
+    if county:
+        all_listings = _agent_cache.get("at_risk_all", [])
+        county_listings = [r for r in all_listings if r["county"].lower() == county.lower()]
+        return county_listings[:AT_RISK_N]
     return _agent_cache.get("at_risk", [])
+
+
+def get_available_counties() -> list[str]:
+    """Return sorted list of unique county names across all ranked at-risk listings."""
+    all_listings = _agent_cache.get("at_risk_all", [])
+    return sorted({r["county"] for r in all_listings if r["county"] and r["county"] != "—"})
 
 
 # ── Ticket generation ─────────────────────────────────────────────────────────
@@ -294,7 +407,9 @@ def generate_tickets_for_listing(listing_id: int) -> dict:
     Retrieves last REVIEW_N review comments for listing_id, calls Groq,
     returns TicketList-compatible dict.
     """
-    cache = _agent_cache.get("at_risk", [])
+    # Search the full ranked pool so county-filtered listings (outside the global
+    # top-20 slice) can still have tickets generated.
+    cache = _agent_cache.get("at_risk_all", _agent_cache.get("at_risk", []))
     listing_info = next((x for x in cache if x["listing_id"] == listing_id), None)
     if listing_info is None:
         raise ValueError(f"Listing {listing_id} not in at-risk cache")
@@ -332,10 +447,12 @@ def generate_tickets_for_listing(listing_id: int) -> dict:
 
     user_prompt = (
         f"Property: {listing_info['listing_name']} ({listing_info['county']} County)\n"
-        f"Current rating: {listing_info['rating']}/5.0\n\n"
-        f"Recent guest reviews:\n{review_text}\n\n"
-        "Extract operational issues and generate task tickets."
+        f"Current rating: {listing_info['rating']}/5.0\n"
     )
+    missing = listing_info.get('missing_amenities', [])
+    if missing:
+        user_prompt += f"Missing high-impact amenities: {', '.join(missing)}\n"
+    user_prompt += f"\nRecent guest reviews:\n{review_text}\n\nExtract operational issues and generate task tickets."
 
     client = _get_groq()
     response = client.chat.completions.create(

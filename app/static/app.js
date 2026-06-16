@@ -20,8 +20,129 @@ let scaleTimer   = null;
 
 const SLIDER_IDS = [
   'review_scores_rating', 'reviews_per_month', 'host_response_rate',
-  'host_acceptance_rate', 'host_experience_years', 'host_listings_count', 'num_amenities'
+  'host_acceptance_rate', 'host_experience_years', 'host_listings_count'
 ];
+
+// Amenity flag IDs — populated from metadata.amenity_flags once metadata loads
+let AMENITY_IDS = [];
+
+// ─────────────────────────────────────────────────────────────────────
+// Ticket Management — localStorage persistence
+// ─────────────────────────────────────────────────────────────────────
+const TICKETS_STORAGE_KEY = 'superhost_task_tickets';
+const STATUS_CYCLE  = { 'Open': 'In Progress', 'In Progress': 'Done', 'Done': 'Open' };
+const STATUS_ICONS  = { 'Open': '○', 'In Progress': '◑', 'Done': '●' };
+
+function loadAllTickets() {
+  try {
+    return JSON.parse(localStorage.getItem(TICKETS_STORAGE_KEY) || '{}');
+  } catch { return {}; }
+}
+
+function saveAllTickets(data) {
+  localStorage.setItem(TICKETS_STORAGE_KEY, JSON.stringify(data));
+}
+
+function saveTicketsForListing(listingId, meta, tickets) {
+  const all = loadAllTickets();
+  all[String(listingId)] = {
+    listing_id:   listingId,
+    listing_name: meta.name,
+    county:       meta.county,
+    rating:       meta.rating,
+    review_count: meta.review_count,
+    probability:  meta.probability,
+    generated_at: new Date().toISOString(),
+    tickets:      tickets.map(t => ({ ...t, status: 'Open' }))
+  };
+  saveAllTickets(all);
+  renderTaskBoard();
+}
+
+function cycleTicketStatus(listingId, ticketIndex) {
+  const all = loadAllTickets();
+  const key = String(listingId);
+  if (!all[key] || !all[key].tickets[ticketIndex]) return;
+  const current = all[key].tickets[ticketIndex].status || 'Open';
+  all[key].tickets[ticketIndex].status = STATUS_CYCLE[current];
+  saveAllTickets(all);
+  // Re-render task board
+  renderTaskBoard();
+  // Re-render the inline ticket panel if this listing is currently displayed
+  const inlineGrid  = document.getElementById('tickets-grid');
+  const currentName = document.getElementById('ticket-listing-name');
+  if (inlineGrid && currentName && currentName.textContent === all[key].listing_name) {
+    inlineGrid.innerHTML = all[key].tickets.map((t, i) => renderTicketCard(t, i, listingId)).join('');
+  }
+}
+
+function deleteListingTickets(listingId) {
+  if (!confirm('Remove all saved tickets for this listing?')) return;
+  const all = loadAllTickets();
+  delete all[String(listingId)];
+  saveAllTickets(all);
+  renderTaskBoard();
+}
+
+function renderTaskBoard() {
+  const board      = document.getElementById('taskboard-grid');
+  const countBadge = document.getElementById('taskboard-count');
+  const section    = document.getElementById('taskboard-section');
+  if (!board) return;
+
+  const all     = loadAllTickets();
+  const entries = Object.values(all);
+
+  // Update the export date attribute for the print CSS pseudo-element
+  if (section) section.setAttribute('data-export-date', new Date().toLocaleDateString());
+
+  if (countBadge) {
+    const total = entries.reduce((s, e) => s + e.tickets.length, 0);
+    const done  = entries.reduce((s, e) => s + e.tickets.filter(t => t.status === 'Done').length, 0);
+    countBadge.textContent = total === 0 ? 'No tickets saved' : `${done}/${total} done`;
+    countBadge.className   = 'taskboard-count' + (total > 0 && done === total ? ' all-done' : '');
+  }
+
+  if (entries.length === 0) {
+    board.innerHTML = `<div class="taskboard-empty">
+      <div class="taskboard-empty-icon">📋</div>
+      <p>No saved tickets yet. Generate tickets from the <a href="#agent-section">Smart Task Ticketing</a> section above to see them here.</p>
+    </div>`;
+    return;
+  }
+
+  // Sort: most recently generated first
+  entries.sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at));
+
+  board.innerHTML = entries.map(entry => {
+    const open   = entry.tickets.filter(t => t.status === 'Open').length;
+    const inprog = entry.tickets.filter(t => t.status === 'In Progress').length;
+    const done   = entry.tickets.filter(t => t.status === 'Done').length;
+    const date   = new Date(entry.generated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `
+      <div class="taskboard-listing-group" id="tbgroup-${entry.listing_id}">
+        <div class="taskboard-listing-header">
+          <div class="taskboard-listing-info">
+            <div class="taskboard-listing-name">${entry.listing_name}</div>
+            <div class="taskboard-listing-meta">📍 ${entry.county} County · ⭐ ${entry.rating} · ${entry.review_count} reviews · Generated ${date}</div>
+            <div class="taskboard-status-summary">
+              <span class="status-pill open">${open} Open</span>
+              <span class="status-pill in-progress">${inprog} In Progress</span>
+              <span class="status-pill done">${done} Done</span>
+            </div>
+          </div>
+          <button class="taskboard-delete-btn" onclick="deleteListingTickets(${entry.listing_id})" title="Remove all tickets for this listing">✕ Remove</button>
+        </div>
+        <div class="tickets-grid">
+          ${entry.tickets.map((t, i) => renderTicketCard(t, i, entry.listing_id)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function exportTasksToPDF() {
+  window.print();
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // Colour helpers — green / amber / red palette for light theme
@@ -113,7 +234,6 @@ const RADAR_RANGES = {
   host_acceptance_rate:  [0,   100],
   host_experience_years: [0,   20],
   host_listings_count:   [1,   50],
-  num_amenities:         [0,   80],
 };
 const RADAR_LABELS = {
   review_scores_rating:  'Review Score',
@@ -122,7 +242,6 @@ const RADAR_LABELS = {
   host_acceptance_rate:  'Acceptance',
   host_experience_years: 'Experience',
   host_listings_count:   'Listings',
-  num_amenities:         'Amenities',
 };
 
 function initRadar() {
@@ -134,7 +253,7 @@ function initRadar() {
       datasets: [
         {
           label: 'You',
-          data: Array(7).fill(0),
+          data: Array(6).fill(0),
           borderColor: '#2d8f5e',
           backgroundColor: 'rgba(45,143,94,0.12)',
           borderWidth: 2,
@@ -144,7 +263,7 @@ function initRadar() {
         },
         {
           label: 'Superhost Median',
-          data: Array(7).fill(0),
+          data: Array(6).fill(0),
           borderColor: '#5cba85',
           backgroundColor: 'rgba(92,186,133,0.07)',
           borderWidth: 2,
@@ -597,7 +716,20 @@ async function initMap(neighStats) {
 function getSliderValues() {
   const vals = {};
   SLIDER_IDS.forEach(id => {
-    vals[id] = parseFloat(document.getElementById(id).value);
+    const el = document.getElementById(id);
+    if (el) vals[id] = parseFloat(el.value);
+  });
+  // Merge binary amenity checkbox states
+  Object.assign(vals, getAmenityValues());
+  return vals;
+}
+
+// Returns {col: 0|1} for all amenity checkboxes currently rendered
+function getAmenityValues() {
+  const vals = {};
+  AMENITY_IDS.forEach(col => {
+    const cb = document.getElementById('cb-' + col);
+    vals[col] = cb && cb.checked ? 1 : 0;
   });
   return vals;
 }
@@ -620,7 +752,7 @@ function updateSliderDisplay(id, value) {
   // Reattach unit text
   const units = { review_scores_rating:'/ 5.0', reviews_per_month:'/mo',
                   host_response_rate:'%', host_acceptance_rate:'%',
-                  host_experience_years:'yrs', host_listings_count:'', num_amenities:'' };
+                  host_experience_years:'yrs', host_listings_count:'' };
   el.querySelector('.slider-unit').textContent = units[id] || '';
 
   // Update slider gradient fill
@@ -792,6 +924,51 @@ function agentProbColor(prob) {
   return '#dc2626';
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Amenity Checklist
+// ─────────────────────────────────────────────────────────────────────
+function renderAmenityChecklist(amenityFlags, amenitySHRates) {
+  const grid = document.getElementById('amenities-grid');
+  if (!grid) return;
+
+  const cols = Object.keys(amenityFlags);
+  if (cols.length === 0) { grid.innerHTML = ''; return; }
+
+  AMENITY_IDS = cols;   // populate module-level array
+
+  grid.innerHTML = cols.map(col => {
+    const label  = amenityFlags[col];
+    const rates  = amenitySHRates ? amenitySHRates[col] : null;
+    const diff   = rates ? rates.diff : 0;
+    const tipText = rates
+      ? `Superhosts have this ${rates.sh_pct}% vs ${rates.nsh_pct}% of non-Superhosts (+${diff.toFixed(1)} pp)`
+      : label;
+    return `
+      <label class="amenity-chip" for="cb-${col}" title="${tipText}">
+        <input type="checkbox" id="cb-${col}" data-col="${col}"/>
+        <span class="amenity-chip-label">${label}</span>
+        ${diff >= 20 ? '<span class="amenity-hot-badge">🔥</span>' : ''}
+      </label>`;
+  }).join('');
+
+  // Update count badge on any change
+  function updateCount() {
+    const checked = AMENITY_IDS.filter(c => {
+      const cb = document.getElementById('cb-' + c);
+      return cb && cb.checked;
+    }).length;
+    const badge = document.getElementById('amenities-count');
+    if (badge) badge.textContent = `${checked} / ${AMENITY_IDS.length} selected`;
+    triggerPredict();
+    triggerSimulate();
+  }
+
+  grid.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', updateCount);
+  });
+  updateCount(); // sync badge on init
+}
+
 function renderAtRiskCard(listing) {
   const pct = Math.round(listing.probability * 100);
   const col = agentProbColor(listing.probability);
@@ -818,12 +995,16 @@ function renderAtRiskCard(listing) {
     </div>`;
 }
 
-function renderTicketCard(ticket, i) {
-  const catClass = 'cat-' + ticket.category.toLowerCase();
-  const priClass = 'priority-' + ticket.priority.toLowerCase();
-  const icon     = CAT_ICONS[ticket.category] || '📋';
+function renderTicketCard(ticket, i, listingId = null) {
+  const catClass    = 'cat-' + ticket.category.toLowerCase();
+  const priClass    = 'priority-' + ticket.priority.toLowerCase();
+  const icon        = CAT_ICONS[ticket.category] || '📋';
+  const status      = ticket.status || 'Open';
+  const statusClass = 'status-' + status.toLowerCase().replace(' ', '-');
+  const canToggle   = listingId !== null;
+  const doneClass   = status === 'Done' ? ' ticket-done' : '';
   return `
-    <div class="ticket-card animate-fade-in" style="animation-delay:${i*0.08}s">
+    <div class="ticket-card animate-fade-in${doneClass}" style="animation-delay:${i*0.08}s">
       <div class="ticket-card-top">
         <span class="ticket-category ${catClass}">${icon} ${ticket.category}</span>
         <span class="ticket-priority ${priClass}">${ticket.priority}</span>
@@ -831,6 +1012,12 @@ function renderTicketCard(ticket, i) {
       <div class="ticket-root-cause">${ticket.root_cause}</div>
       <div class="ticket-action-label">Recommended Action</div>
       <div class="ticket-action">${ticket.recommended_action}</div>
+      <div class="ticket-card-footer" data-status="${status}">
+        <button class="ticket-status-btn ${statusClass}"
+          ${canToggle ? `onclick="cycleTicketStatus(${listingId}, ${i})"` : 'disabled'}
+          title="${canToggle ? 'Click to advance: Open → In Progress → Done' : 'Save listing to track status'}"
+        >${STATUS_ICONS[status]} ${status}</button>
+      </div>
     </div>`;
 }
 
@@ -859,7 +1046,11 @@ async function generateTickets(listingId, name, county, rating, reviews, prob) {
     if (!data.tickets || data.tickets.length === 0) {
       gridEl.innerHTML = '<div class="at-risk-empty">No specific issues identified in the latest reviews.</div>';
     } else {
-      gridEl.innerHTML = data.tickets.map((t, i) => renderTicketCard(t, i)).join('');
+      // Auto-save to localStorage before rendering so status toggles work immediately
+      saveTicketsForListing(listingId, { name, county, rating, review_count: reviews, probability: prob }, data.tickets);
+      // Re-render from localStorage so status buttons are wired up correctly
+      const saved = loadAllTickets()[String(listingId)];
+      gridEl.innerHTML = (saved ? saved.tickets : data.tickets).map((t, i) => renderTicketCard(t, i, listingId)).join('');
     }
   } catch(e) {
     gridEl.innerHTML = '<div class="at-risk-empty" style="color:var(--rose);">Error generating tickets: ' + e.message + '</div>';
@@ -875,29 +1066,83 @@ function closeTickets() {
 }
 
 async function loadAgentSection() {
-  const banner = document.getElementById('agent-status-banner');
-  const grid   = document.getElementById('at-risk-grid');
+  const banner    = document.getElementById('agent-status-banner');
+  const grid      = document.getElementById('at-risk-grid');
+  const filterBar = document.getElementById('agent-filter-bar');
+  const select    = document.getElementById('county-filter');
+  const countEl   = document.getElementById('agent-filter-count');
   if (!banner || !grid) return;
 
+  // ── Render helper ──────────────────────────────────────────────────
+  function renderGrid(listings) {
+    if (!listings || listings.length === 0) {
+      grid.innerHTML = `<div class="at-risk-empty">No at-risk listings found for this county.</div>`;
+      if (countEl) countEl.textContent = '0 listings';
+      return;
+    }
+    grid.innerHTML = listings.map(renderAtRiskCard).join('');
+    if (countEl) countEl.textContent = `${listings.length} listing${listings.length !== 1 ? 's' : ''}`;
+  }
+
+  // ── Fetch listings (with optional county filter) ───────────────────
+  async function fetchListings(county = '') {
+    const url = county ? `/agent/at-risk?county=${encodeURIComponent(county)}` : '/agent/at-risk';
+    const res  = await fetch(url);
+    return res.json();
+  }
+
+  // ── County dropdown change handler ────────────────────────────────
+  async function onCountyChange() {
+    const county = select ? select.value : '';
+    grid.innerHTML = `<div class="at-risk-empty"><div class="pulse">Loading listings for ${county || 'Twin Cities'}…</div></div>`;
+    try {
+      const data = await fetchListings(county);
+      renderGrid(data.listings || []);
+    } catch (e) {
+      grid.innerHTML = `<div class="at-risk-empty" style="color:var(--rose);">Error loading listings.</div>`;
+    }
+  }
+
+  if (select) select.addEventListener('change', onCountyChange);
+
+  // ── Polling until agent is ready ──────────────────────────────────
   let attempts = 0;
   const MAX_ATTEMPTS = 40;
 
   const poll = async () => {
     try {
-      const res  = await fetch('/agent/at-risk');
-      const data = await res.json();
+      const data = await fetchListings('');   // always poll the global list first
       if (data.status === 'ready' && data.listings && data.listings.length > 0) {
-        grid.innerHTML = data.listings.map(renderAtRiskCard).join('');
+        // Render global listings
+        renderGrid(data.listings);
+
+        // Update banner
         banner.className = 'agent-status-banner agent-ready';
-        banner.innerHTML = '\u2705 Agent ready \u2014 ' + data.listings.length + ' listings identified where review score is the top SHAP negative driver. Click any listing to generate task tickets.';
-        return;
+        banner.innerHTML = `✅ Agent ready &mdash; showing top at-risk listings where review score is the top SHAP negative driver. Filter by county below.`;
+
+        // Show filter bar and populate counties
+        if (filterBar) filterBar.hidden = false;
+        if (select) {
+          try {
+            const cRes = await fetch('/agent/counties');
+            const cData = await cRes.json();
+            (cData.counties || []).forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name + ' County';
+              select.appendChild(opt);
+            });
+          } catch (e) {
+            console.warn('Could not load counties:', e);
+          }
+        }
+        return;   // done polling
       }
+
       attempts++;
       if (attempts < MAX_ATTEMPTS) setTimeout(poll, 5000);
-      else {
-        banner.innerHTML = '\u26a0 Agent data took too long to load. Please refresh.';
-      }
-    } catch(e) {
+      else banner.innerHTML = '⚠ Agent data took too long to load. Please refresh.';
+    } catch (e) {
       attempts++;
       if (attempts < MAX_ATTEMPTS) setTimeout(poll, 5000);
     }
@@ -941,6 +1186,11 @@ async function boot() {
     // Render feature importance & model table
     if (metadata.feature_importance) renderImportanceChart(metadata.feature_importance);
     if (metadata.model_performance)  renderPerfTable(metadata.model_performance);
+
+    // Render amenity checklist from metadata
+    if (metadata.amenity_flags) {
+      renderAmenityChecklist(metadata.amenity_flags, metadata.amenity_superhost_rates || {});
+    }
 
     // Pre-populate scale chart from cached metadata
     if (metadata.scale_curve) {
@@ -1002,6 +1252,9 @@ async function boot() {
 
   // Start Agent 3 background polling
   loadAgentSection();
+
+  // Populate Task Board from localStorage (persisted from previous sessions)
+  renderTaskBoard();
 
   // Hide loading overlay
   const overlay = document.getElementById('loading-overlay');
