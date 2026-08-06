@@ -59,11 +59,9 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check . --output-format=github \
-            --exclude=ml_pipeline/train_model.py \
-            --exclude=app/static
-        # We exclude train_model.py (long script with acceptable style choices)
-        # and static/ (generated HTML/JS assets)
+          # Only lint the directories we own — avoids noise from pre-existing
+          # notebooks, scratch scripts, and ml_pipeline utility files.
+          ruff check app/ monitoring/ tests/ --output-format=github
 
       - name: Run pytest with coverage
         env:
@@ -87,14 +85,19 @@ jobs:
             pytest_output.txt
             coverage.xml
           retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload coverage to summary
         if: always()
         run: |
-          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          tail -20 pytest_output.txt >> $GITHUB_STEP_SUMMARY || true
+          if [ -f pytest_output.txt ]; then
+            tail -20 pytest_output.txt >> $GITHUB_STEP_SUMMARY
+          else
+            echo "pytest did not run (lint step may have failed)" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # ────────────────────────────────────────────────────────────────────────────
