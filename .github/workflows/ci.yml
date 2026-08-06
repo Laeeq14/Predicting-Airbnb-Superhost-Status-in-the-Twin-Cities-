@@ -38,7 +38,7 @@ jobs:
   # Job 1: Lint + Tests
   # ────────────────────────────────────────────────────────────────────────────
   lint-and-test:
-    name: "Lint & Test (Python ${{ env.PYTHON_VERSION }})"
+    name: "Lint & Test (Python 3.11)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
