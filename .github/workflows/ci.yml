@@ -104,10 +104,16 @@ jobs:
   # Job 2: Evidently Drift Check
   # ────────────────────────────────────────────────────────────────────────────
   drift-check:
-    name: "Evidently Drift Gate"
+    name: "Evidently Drift Report (informational)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint-and-test   # only runs if lint+tests pass
+    # continue-on-error: In CI we have no real inference data — the drift report
+    # runs against synthetic reference data and is INFORMATIONAL only.
+    # The HTML report + JSON summary are uploaded as artifacts every run.
+    # Promote this to a hard gate (remove continue-on-error) when you wire in
+    # real inference logs from production.
+    continue-on-error: true
 
     steps:
       - name: Checkout repository

@@ -156,17 +156,14 @@ def generate_drift_report(
     if current_df is None:
         logger.info(
             "No live current_df provided — building synthetic current dataset "
-            "(N=%d, slightly shifted for demo)…", N_CURRENT
+            "(N=%d, slight natural variation)...", N_CURRENT
         )
-        # Simulate mild drift: shift a few features by ~10% to produce a realistic demo
+        # Simulate mild natural variation only — realistic for a stable model.
+        # A real deployment would pass actual inference logs here.
         current_df = _synthetic_dataframe(
             feature_defaults, superhost_avg, non_superhost_avg,
-            n=N_CURRENT, seed=99, noise_scale=0.12,   # wider noise = mild drift
+            n=N_CURRENT, seed=99, noise_scale=0.07,   # slightly more than reference (0.05)
         )
-        # Deliberately nudge review_scores_rating slightly downward to show drift
-        current_df["review_scores_rating"] = (
-            current_df["review_scores_rating"] * 0.97
-        ).clip(lower=0)
 
     # Ensure both frames have the same monitored columns
     cols = MONITOR_FEATURES + ["host_is_superhost"]
