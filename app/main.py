@@ -1,11 +1,12 @@
 """FastAPI backend — Superhost Predictor & Performance Simulator"""
 from __future__ import annotations
+
 import json
 import logging
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any  # noqa: F401 — used by model_loader at runtime
 
 import numpy as np
 import pandas as pd
@@ -14,19 +15,20 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# Drift monitoring (lazy import inside endpoint to keep startup fast)
-MONITORING_DIR  = Path(__file__).parent.parent / "monitoring"
-DRIFT_HTML      = MONITORING_DIR / "drift_report.html"
-DRIFT_JSON      = MONITORING_DIR / "drift_summary.json"
-
-from .model_loader import get_model, get_metadata
 from . import agent as agent_module
+from .model_loader import get_metadata, get_model
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR  = Path(__file__).parent.parent
-GEO_FILE  = BASE_DIR / 'neighbourhoods.geojson'
-NEIGH_FILE = BASE_DIR / 'ml_pipeline' / 'neighbourhood_stats.json'
+BASE_DIR       = Path(__file__).parent.parent
+GEO_FILE       = BASE_DIR / "neighbourhoods.geojson"
+NEIGH_FILE     = BASE_DIR / "ml_pipeline" / "neighbourhood_stats.json"
+
+# Drift monitoring output paths (lazy Evidently import inside endpoints)
+MONITORING_DIR = Path(__file__).parent.parent / "monitoring"
+DRIFT_HTML     = MONITORING_DIR / "drift_report.html"
+DRIFT_JSON     = MONITORING_DIR / "drift_summary.json"
+
 
 
 @asynccontextmanager

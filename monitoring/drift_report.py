@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import json
 import logging
-import random
 from pathlib import Path
 
 import numpy as np
@@ -139,9 +138,9 @@ def generate_drift_report(
     """
     # Lazy import — keeps startup time fast when monitoring isn't needed
     # Evidently 0.7.x moved the classic API under evidently.legacy.*
-    from evidently.legacy.report import Report
     from evidently.legacy.metric_preset import DataDriftPreset, DataQualityPreset
     from evidently.legacy.metrics.data_drift.dataset_drift_metric import DatasetDriftMetric
+    from evidently.legacy.report import Report
 
     meta              = _load_metadata()
     feature_defaults  = meta["feature_defaults"]
@@ -264,7 +263,7 @@ if __name__ == "__main__":
     print(f"  Dataset drift      : {summary['dataset_drift']}")
     print(f"  Drifted columns    : {summary['number_of_drifted_columns']} / {summary['number_of_columns']}")
     print(f"  Share drifted      : {summary['share_of_drifted_columns']:.1%}")
-    print(f"\n  Per-feature results:")
+    print("\n  Per-feature results:")
     for fd in summary["feature_drift"]:
         flag = "[DRIFT]" if fd["drift_detected"] else "[ok]   "
         pval = f"p={fd['p_value']:.4f}" if fd["p_value"] is not None else "p=N/A"

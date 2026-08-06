@@ -15,7 +15,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -48,6 +48,7 @@ def client(mock_groq_key):
          _patch("app.agent.get_at_risk_listings", return_value=[]), \
          _patch("openai.OpenAI", return_value=MagicMock()):
         from fastapi.testclient import TestClient
+
         from app.main import app
         yield TestClient(app)
 
@@ -190,7 +191,7 @@ class TestDriftMonitoring:
 
     def test_drift_summary_has_all_monitored_features(self):
         """Every MONITOR_FEATURES entry must appear in the per-feature drift list."""
-        from monitoring.drift_report import generate_drift_report, MONITOR_FEATURES
+        from monitoring.drift_report import MONITOR_FEATURES, generate_drift_report
 
         summary = generate_drift_report(save_html=False, save_json=False)
         reported_features = {fd["feature"] for fd in summary["feature_drift"]}
