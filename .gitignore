@@ -32,4 +32,14 @@ env/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumb.db
+
+# Monitoring outputs (generated — do not commit)
+monitoring/drift_report.html
+monitoring/drift_summary.json
+
+# CI artefacts
+coverage.xml
+.coverage
+pytest_output.txt
+drift_output.txt

@@ -1,0 +1,222 @@
+# .github/workflows/ci.yml
+#
+# Superhost Predictor — Continuous Integration
+# ============================================
+# Triggers on every push and pull_request targeting main.
+#
+# Jobs
+# ────
+#   1. lint-and-test   — ruff lint + pytest suite (model load, API, drift)
+#   2. drift-check     — runs Evidently drift report; fails if >50% of
+#                        features show statistical drift (regression gate)
+#
+# CI-safety guarantees
+# ────────────────────
+#   - No large CSV files are loaded (gitignored; synthetic data is used)
+#   - GROQ_API_KEY is mocked inside pytest (see tests/test_api.py)
+#   - best_model.joblib + model_metadata.json are committed and used directly
+#
+# Secrets required (add in repo Settings → Secrets → Actions)
+#   GROQ_API_KEY   — only needed for future live-inference integration tests
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+env:
+  PYTHON_VERSION: "3.11"
+  # Drift gate: fail if more than this fraction of features drift
+  DRIFT_THRESHOLD: "0.50"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 1: Lint + Tests
+  # ────────────────────────────────────────────────────────────────────────────
+  lint-and-test:
+    name: "Lint & Test (Python ${{ env.PYTHON_VERSION }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          ruff check . --output-format=github \
+            --exclude=ml_pipeline/train_model.py \
+            --exclude=app/static
+        # We exclude train_model.py (long script with acceptable style choices)
+        # and static/ (generated HTML/JS assets)
+
+      - name: Run pytest with coverage
+        env:
+          # Fake key so agent.py's module-level guard doesn't raise
+          GROQ_API_KEY: gsk_test_fake_key_for_ci
+        run: |
+          pytest tests/ -v \
+            --tb=short \
+            --cov=app \
+            --cov=monitoring \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            2>&1 | tee pytest_output.txt
+
+      - name: Upload pytest output
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pytest-results
+          path: |
+            pytest_output.txt
+            coverage.xml
+          retention-days: 14
+
+      - name: Upload coverage to summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tail -20 pytest_output.txt >> $GITHUB_STEP_SUMMARY || true
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Job 2: Evidently Drift Check
+  # ────────────────────────────────────────────────────────────────────────────
+  drift-check:
+    name: "Evidently Drift Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint-and-test   # only runs if lint+tests pass
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Evidently drift report
+        run: |
+          python -m monitoring.drift_report 2>&1 | tee drift_output.txt
+          echo "Exit code: $?"
+
+      - name: Evaluate drift threshold
+        run: |
+          python - <<'EOF'
+          import json, os, sys
+          from pathlib import Path
+
+          threshold = float(os.environ.get("DRIFT_THRESHOLD", "0.50"))
+          summary_path = Path("monitoring/drift_summary.json")
+
+          if not summary_path.exists():
+              print("::error::drift_summary.json not found — drift report may have failed.")
+              sys.exit(1)
+
+          with open(summary_path) as f:
+              summary = json.load(f)
+
+          share   = summary.get("share_of_drifted_columns", 0.0)
+          n_drift = summary.get("number_of_drifted_columns", 0)
+          n_total = summary.get("number_of_columns", 0)
+
+          print(f"\nDrift Gate Summary")
+          print(f"  Model          : {summary.get('model_name', 'unknown')}")
+          print(f"  Features checked: {n_total}")
+          print(f"  Drifted        : {n_drift} ({share:.1%})")
+          print(f"  Threshold      : {threshold:.1%}")
+
+          for fd in summary.get("feature_drift", []):
+              flag = "⚠️  DRIFT" if fd["drift_detected"] else "✅  ok   "
+              pval = f"p={fd['p_value']:.4f}" if fd.get("p_value") is not None else "p=N/A"
+              print(f"    {flag}  {fd['feature']:<38} {pval}")
+
+          if share > threshold:
+              print(f"\n::error::DRIFT THRESHOLD EXCEEDED: {share:.1%} > {threshold:.1%}")
+              print("::error::Review feature drift before merging — model may have regressed.")
+              sys.exit(1)
+          else:
+              print(f"\n✅ Drift within threshold ({share:.1%} ≤ {threshold:.1%})")
+          EOF
+        env:
+          DRIFT_THRESHOLD: ${{ env.DRIFT_THRESHOLD }}
+
+      - name: Upload drift report artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: drift-report
+          path: |
+            monitoring/drift_report.html
+            monitoring/drift_summary.json
+            drift_output.txt
+          retention-days: 30
+
+      - name: Post drift summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'monitoring/drift_summary.json';
+
+            if (!fs.existsSync(path)) {
+              console.log('No drift_summary.json found — skipping PR comment.');
+              return;
+            }
+
+            const summary = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const share   = (summary.share_of_drifted_columns * 100).toFixed(1);
+            const status  = summary.dataset_drift ? '⚠️ Drift Detected' : '✅ No Drift';
+            const icon    = summary.dataset_drift ? '⚠️' : '✅';
+
+            let rows = '';
+            for (const fd of (summary.feature_drift || [])) {
+              const flag = fd.drift_detected ? '⚠️' : '✅';
+              const pval = fd.p_value != null ? fd.p_value.toFixed(4) : 'N/A';
+              rows += `| ${fd.feature} | ${flag} | ${pval} |\n`;
+            }
+
+            const body = `## ${icon} Evidently AI Drift Gate — ${status}
+
+            **Model**: ${summary.model_name || 'unknown'}
+            **Drifted features**: ${summary.number_of_drifted_columns} / ${summary.number_of_columns} (${share}%)
+
+            | Feature | Drift | p-value |
+            |---------|-------|---------|
+            ${rows}
+
+            <sub>Generated by [ci.yml](.github/workflows/ci.yml) · Training date: ${summary.training_date || 'unknown'}</sub>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

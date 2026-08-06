@@ -14,6 +14,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# Drift monitoring (lazy import inside endpoint to keep startup fast)
+MONITORING_DIR  = Path(__file__).parent.parent / "monitoring"
+DRIFT_HTML      = MONITORING_DIR / "drift_report.html"
+DRIFT_JSON      = MONITORING_DIR / "drift_summary.json"
+
 from .model_loader import get_model, get_metadata
 from . import agent as agent_module
 
@@ -312,3 +317,54 @@ def agent_tickets(listing_id: int):
         raise HTTPException(404, str(e))
     except Exception as e:
         raise HTTPException(500, f"LLM call failed: {e}")
+
+
+# ── Drift Monitoring ─────────────────────────────────────────────────────────
+
+@app.get("/monitoring/drift")
+def monitoring_drift():
+    """
+    Return a machine-readable Evidently drift summary as JSON.
+
+    If a cached drift_summary.json exists from a previous run it is returned
+    immediately (fast).  Otherwise the drift report is generated on-the-fly
+    using the synthetic reference path — this takes ~5 seconds the first time.
+    """
+    if DRIFT_JSON.exists():
+        with open(DRIFT_JSON) as f:
+            return JSONResponse(json.load(f))
+
+    # Generate on-the-fly (no cached summary yet)
+    try:
+        from monitoring.drift_report import generate_drift_report
+        summary = generate_drift_report(save_html=True, save_json=True)
+        return JSONResponse(summary)
+    except Exception as exc:
+        logger.error("Drift report generation failed: %s", exc)
+        raise HTTPException(500, f"Drift report generation failed: {exc}")
+
+
+@app.get("/monitoring/drift-report", response_class=FileResponse)
+def monitoring_drift_report():
+    """
+    Serve the full interactive Evidently HTML drift report.
+
+    Generates the report if it doesn't exist yet.  Access this endpoint in a
+    browser to see the complete per-feature drift analysis.
+    """
+    if not DRIFT_HTML.exists():
+        try:
+            from monitoring.drift_report import generate_drift_report
+            generate_drift_report(save_html=True, save_json=True)
+        except Exception as exc:
+            logger.error("Drift HTML generation failed: %s", exc)
+            raise HTTPException(500, f"Drift report generation failed: {exc}")
+
+    if not DRIFT_HTML.exists():
+        raise HTTPException(404, "Drift report HTML not found. Run drift_report.py first.")
+
+    return FileResponse(
+        path=str(DRIFT_HTML),
+        media_type="text/html",
+        filename="drift_report.html",
+    )
