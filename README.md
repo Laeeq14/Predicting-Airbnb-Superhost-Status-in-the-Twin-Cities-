@@ -1,183 +1,348 @@
-Report Link: [group23_final_report.pdf](https://github.com/user-attachments/files/24547128/group23_final_report.pdf)
+# Superhost Predictor — Twin Cities 🏠
 
-PROBLEM STATEMENT: <br/>
-> Superhosts are trusted Airbnb hosts who provide high-quality stays.
-> Predicting which hosts are superhosts on Airbnb is difficult due to the size and complexity of the dataset.
-> Lots of key factors : reviews, pricing, amenities, reliability.
-> Can we predict superhosts using a machine learning model?
+> **Predict Airbnb Superhost status and turn predictions into action.**
+> Upload a host profile, get a probability, and receive SHAP-backed recommendations, a what-if simulator, and Groq-generated operational tickets from real guest reviews — all in one FastAPI-powered stack.
 
-PROPOSED SOLUTION:
-> Performing data preprocessing and feature engineering on datasets.
-> Analyzing patterns using EDA (Exploratory Data Analysis) 
-> Building and evaluating various classification models.
-> Identifying the most important features.
-> Identifying the classification model with the best performance.
+Report: [group23_final_report.pdf](https://github.com/user-attachments/files/24547128/group23_final_report.pdf)
 
-IMPORTANCE OF IDENTIFYING SUPERHOSTS
-> Improves evaluation: It provides a reliable way for guests to quickly evaluate potential hosts and for hosts to measure their performance against top performers.<BR/>
-> Increases transparency: The Superhost badge signifies a host's commitment to quality, helping guests make informed booking decisions.<BR/>
-> Boosts visibility: Listings with the Superhost badge can appear higher in search results, leading to more bookings for the host.<BR/>
+---
 
-DATASET OVERVIEW
-> Source: Airbnb open dataset (https://insideairbnb.com/get-the-data/)<BR/>
-Datasets used: <BR/>
-listings.csv - host, listing, location, amenities, ratings<BR/>
-reviews.csv - review text + timestamps<BR/>
-Number of observations: 5000+ observations<BR/>
-No. of features (before preprocessing): 80+<BR/>
-Target variable: host_is_superhost<BR/>
-Class Distribution:<BR/>
-1 (Superhost): 53.7%<BR/>
-0 (Not Superhost): 46.3%<BR/>
+## 📈 Benchmark Results — 11 Model Comparison
 
-DATA PREPROCESSING
-> Removed duplicate listings (id) <BR/>
-Converted host_since to datetime<BR/>
-Converted percentage features to numeric values<BR/>
-Extracted numeric values from bathrooms_text using regex<BR/>
-Handled missing values:<BR/>
-Numeric - median imputation<BR/>
-Categorical - “missing” placeholder<BR/><BR/>
+*Evaluated on a host-aware held-out test set (20% of unique host IDs). Both scrape periods (June + September 2025) combined.*
 
-> Preprocessing Pipeline (Sklearn)<BR/>
-Used ColumnTransformer + Pipeline<BR/>
-One-Hot Encoding for categorical features<BR/>
-StandardScaler for numerical features<BR/>
+| Model | Accuracy | ROC-AUC | F1 | Precision | Recall |
+|---|---|---|---|---|---|
+| Logistic Regression | 0.7439 | 0.8168 | 0.7611 | 0.7415 | 0.7818 |
+| Decision Tree | 0.7615 | 0.8194 | 0.7792 | 0.7538 | 0.8064 |
+| Random Forest | **0.7925** | **0.8703** | **0.8026** | 0.7970 | 0.8084 |
+| XGBoost | 0.7647 | 0.8463 | 0.7757 | 0.7718 | 0.7797 |
+| LightGBM | 0.7749 | 0.8540 | 0.7885 | 0.7734 | 0.8043 |
+| CatBoost | 0.7802 | 0.8621 | 0.7932 | 0.7794 | 0.8074 |
+| Random Forest (Tuned) | 0.7882 | 0.8663 | 0.7990 | 0.7918 | 0.8064 |
+| XGBoost (Tuned) | 0.7749 | 0.8537 | 0.7904 | 0.7686 | 0.8135 |
+| LightGBM (Tuned) | 0.7754 | 0.8550 | 0.7885 | 0.7752 | 0.8023 |
+| CatBoost (Tuned) | 0.7797 | 0.8595 | 0.7948 | 0.7733 | 0.8176 |
+| Voting Ensemble | 0.7813 | 0.8660 | 0.7952 | 0.7777 | 0.8135 |
 
-FEATURE ENGINEERING
-> New features created:<BR/>
-host_experience_years: How long host has been active<BR/>
-num_amenities: Total amenities offered<BR/>
-review_count: Number of reviews per listing<BR/>
-avg_comment_length: Average length of comments<BR/>
-reviews_per_month: Hosting activity<BR/>
-log1p(skewed_features): Reduce skewness<BR/>
+**Winner: Random Forest — ROC-AUC 0.8703, F1 0.8026**
 
-> Merging Review data<BR/>
-Joined reviews.csv with listings.csv using listing_id = id<BR/>
-Aggregated:<BR/>
-Review count<BR/>
-Average text length<BR/>
+Saved as `ml_pipeline/best_model.joblib`. Winner is determined programmatically by highest ROC-AUC on the held-out test set — no manual selection.
 
-EDA
-> <img width="202" height="91" alt="image" src="https://github.com/user-attachments/assets/ff59b521-341e-4a89-a8a5-8f93b29cf61c" /> Dataset is balanced enough for classification
-> <img width="847" height="528" alt="image" src="https://github.com/user-attachments/assets/f5d107cd-82a4-4cd6-b88c-11f5f35ddd9b" />
-> <img width="852" height="529" alt="image" src="https://github.com/user-attachments/assets/9aa0162a-252c-41b0-b137-f4fbd4fe6ab9" />
-> <img width="648" height="396" alt="image" src="https://github.com/user-attachments/assets/d3236427-53b1-4b8f-b596-715721d41d96" />
-> <img width="626" height="396" alt="image" src="https://github.com/user-attachments/assets/8926da19-b186-448e-b4ef-977933d9743f" />
-> <img width="634" height="396" alt="image" src="https://github.com/user-attachments/assets/52fcddf6-5739-4972-9035-bb498e526338" /><br/>
-> Superhosts generally have:
-Higher review scores
-More amenities
-More reviews per month
-Longer hosting experience
-Applied log transformation to skewed features
-Visualizations confirmed distinct patterns between classes - classification is feasible.
+---
 
-CORRELATION INSIGHTS
-> <img width="983" height="878" alt="image" src="https://github.com/user-attachments/assets/80cb6808-d953-4284-ac8f-d7f2e183aa15" />
-> <img width="341" height="295" alt="Screenshot 2026-01-10 180020" src="https://github.com/user-attachments/assets/d905b502-5797-4f92-be1b-85750001412a" />
+## ⚡ What Makes This Different
 
-MODEL SELECTION
-> Methodology
-train_test_split() with stratified sampling
-Evaluation metrics: accuracy, F1, ROC-AUC
-Hyperparameter tuning using RandomizedSearchCV + CV
-Used pipelines to combine preprocessing + model training
-> <img width="636" height="324" alt="image" src="https://github.com/user-attachments/assets/6d8c75d3-1798-4f2c-83e1-08dc1f54fe52" />
+| Capability | Detail |
+|---|---|
+| **11 models, 6 families** | LR, DT, RF, XGBoost, LightGBM, CatBoost — all tuned with `RandomizedSearchCV(n_iter=100)` + StratifiedKFold |
+| **Host-aware train/test split** | Splits on unique `host_id`, not rows — prevents leakage when the same host appears in both scrape periods |
+| **Dual scrape periods** | June 22, 2025 + September 24, 2025 Twin Cities data combined for temporal coverage |
+| **20 discriminative amenity flags** | Binary features selected by ≥14pp Superhost-rate difference AND ≥15% listing coverage |
+| **SHAP at-risk agent** | Batch SHAP on 100 at-risk listings at startup; surfaces hosts where low rating is the dominant negative driver |
+| **Groq LLM ticket generation** | Last 5 guest reviews → Llama-3.3-70b → categorized, prioritized operational tickets |
+| **What-if simulator** | Sweeps `host_listings_count` 1→50, returns the full probability curve and the peak listing count |
+| **Actionable recommendations** | `/predict` computes probability deltas for each improvable feature and missing amenity; returns top 3 |
+| **Evidently drift monitoring** | CI-safe drift gate using synthetic reference data from `model_metadata.json` — no 80MB CSVs needed |
+| **CI/CD regression gate** | GitHub Actions: ruff lint + pytest + Evidently drift check with ≤50% threshold on every PR |
 
-MODEL PERFORMANCE
-> Logistic Regression <br/>
-> <img width="801" height="879" alt="image" src="https://github.com/user-attachments/assets/df77bea9-f92b-4d4d-98f3-704bab8180e8" /> <br/><br/>
-> Decision Tree <br/>
-> <img width="794" height="816" alt="image" src="https://github.com/user-attachments/assets/6e33a531-f9fb-4f2a-980e-cfcc57fa698a" /> <br/><br/>
-> Random Forest <br/>
-> <img width="792" height="825" alt="image" src="https://github.com/user-attachments/assets/436eff48-3f5e-4b66-ab7d-54831fd3977a" /> <br/><br/>
-> XGBoost <br/>
-> <img width="790" height="825" alt="image" src="https://github.com/user-attachments/assets/7941be10-0e85-4bc4-bc19-8e598bd47d6f" />
+---
 
-HYPERPARAMETER TUNING
-> Objective: Improve model performance using RandomizedSearchCV with StratifiedKFold (5-fold) validation.
-Why Hyperparameter Tuning?
-Prevents overfitting / underfitting
-Finds optimal model settings
-Improves generalization on unseen data
-Method used: RandomizedSearchCV + StratifiedKFold(cv=5, scoring="f1")
-Tuned Parameters:
-Random Forest: n_estimators, max_depth, max_features, min_samples_split
-XGBoost: n_estimators, max_depth, learning_rate, subsample, colsample_bytree <br/><br/>
-> Random Forest (Tuned) <br/>
-> <img width="885" height="690" alt="image" src="https://github.com/user-attachments/assets/c6d0a5d9-3002-4bcc-a9c1-3cd11b61f905" /> <br/><br/>
-> XGBoost (Tuned) <br/>
-> <img width="1050" height="687" alt="image" src="https://github.com/user-attachments/assets/53927e7a-90da-4ce4-bd41-b71060470952" /> <br/><br/>
-> <img width="928" height="155" alt="image" src="https://github.com/user-attachments/assets/2657526b-f550-469d-a781-95bbcea91825" />
+## 🏗️ Architecture
 
-ROC CURVE AND PRECISION RECALL CURVES
-> <img width="1183" height="484" alt="image" src="https://github.com/user-attachments/assets/52c9a626-5057-42b1-90b2-9acbe01ace42" /> <br/>
+```
+Two Airbnb scrape CSVs (June + Sep 2025)
+           │
+           ▼
+┌──────────────────────────────────┐
+│  ml_pipeline/train_model.py      │  Train + tune 11 models
+│  → best_model.joblib             │  Host-aware split on host_id
+│  → model_metadata.json           │  Performance, defaults, superhost avgs
+└──────────────┬───────────────────┘
+               │
+        ┌──────▼──────────────────────────────────────────────┐
+        │  app/main.py  (FastAPI)                              │
+        │                                                      │
+        │  POST /predict             → probability + recs      │
+        │  POST /simulate            → listings-count curve    │
+        │  GET  /neighbourhood-stats → GeoJSON choropleth      │
+        │  GET  /agent/at-risk       → SHAP-ranked hosts       │
+        │  GET  /agent/counties      → county filter           │
+        │  POST /agent/tickets/{id}  → Groq LLM tickets        │
+        │  GET  /monitoring/drift    → Evidently JSON          │
+        │  GET  /monitoring/drift-report → HTML report         │
+        └──────────────────────────────────────────────────────┘
+                       │
+            ┌──────────▼──────────┐
+            │  app/static/        │
+            │  index.html (UI)    │
+            └─────────────────────┘
+```
 
-BEST MODEL - XGBOOST (TUNED)
-> Reasons<br/>
-> 1. Highest overall performance: XGBoost consistently
-outperforms all other models across key evaluation
-metrics<br/>
-> 2. Handles Class Imbalance Effectively: XGBoost uses
-scale_pos_weight and gradient boosting, which
-improve recall for minority class, helps detect
-Superhosts more reliably<br/>
-> 3. Captures Complex Feature Interactions: XGBoost
-uses tree boosting, allowing it to model non-linear
-relationships, able to learn feature interactions that
-traditional logistic regression & decision trees miss<br/>
-> 4. Faster & More Efficient: Built-in regularization (L1 &
-L2) reduces overfitting<br/>
+### SHAP At-Risk Agent (`app/agent.py`)
 
-FEATURE IMPORTANCE
-> <img width="882" height="550" alt="image" src="https://github.com/user-attachments/assets/855820f6-2b2a-4055-aa0e-0036786f559a" /> <br/>
-> Random Forest Feature Importance: <br/>
-> review_scores_rating, host_experience_years, and
-reviews_per_month are the strongest signals for the
-random forest model when determining superhost
-status. <br/><br/>
-> <img width="1004" height="550" alt="image" src="https://github.com/user-attachments/assets/b1f43613-da6f-4c05-b8e5-262efe61f281" />
-> Top Logistic Regression Coefficients: <br/>
-> The models suggest that while a high review_scores_rating is
-essential for superhost status, having a very large number of
-listings (host_listings_count being highly negative) works
-against achieving that status, perhaps due to difficulty
-maintaining high standards across many properties.
+```
+Startup (background thread at FastAPI lifespan)
+  ↓
+Load listings → filter: rating < 4.8, reviews ≥ 5
+  ↓
+Batch SHAP (100 listings, single vectorized call — ~10× faster than per-row)
+  ↓
+Filter: rating_shap < -0.05  (rating is the dominant negative driver)
+  ↓
+Detect missing high-impact amenities  (shap < -0.03 AND amenity absent)
+  ↓
+Rank by Superhost probability ascending (worst hosts first)
+  ↓
+Cache → /agent/at-risk  (optional ?county= filter)
 
-SHAP ANALYSIS
-> What is SHAP Analysis?<BR/>
-SHAP stands for SHapley Additive exPlanations.<BR/>
-It is a powerful framework based on cooperative game theory
-that explains the output of any machine learning model.<BR/>
-It assigns an "importance value" (a SHAP value) to each feature for a specific prediction, showing how much that feature pushed
-the prediction from the average baseline. <BR/><BR/>
-> Why is it Used?<BR/>
-Interpretability: Provides clear, human-understandable reasons
-for complex model decisions (e.g., why a host was predicted to
-be a superhost).<BR/>
-Fairness & Debugging: Helps data scientists identify hidden
-biases and ensure models behave as expected.<BR/>
-Feature Understanding: Visualizes global and local feature
-relationships, including complex interactions between features.<BR/>
+On POST /agent/tickets/{listing_id}:
+  Retrieve last 5 guest reviews
+  → Groq Llama-3.3-70b (json_object mode)
+  → Pydantic-validated TicketList
+     category: Maintenance | Housekeeping | Amenities | Communication
+     priority: Low | Medium | High
+     root_cause: specific problem
+     recommended_action: concrete fix
+```
 
-SHAP ANALYSIS RESULTS
-> <img width="492" height="680" alt="image" src="https://github.com/user-attachments/assets/4df26f1e-72b3-415c-a5bb-4df4eac44334" /><BR/>
-> The image visualizes
-the interaction effects between a host's
-acceptance rate and response rate when predicting superhost
-status.<BR/><BR/>
-Interaction:
-The model uses these two features together; they
-have little impact in isolation.<BR/>
-Synergy:
-High values for both rates (red dots on the right side)
-create a strong positive effect on the prediction.<BR/>
-Detriment:
-Low values for both rates (blue dots on the left side)
-create a negative effect on the prediction.<BR/>
-Conclusion:
-A host needs both high acceptance and high
-response rates to benefit the superhost prediction.<BR/>
+---
 
+## 📊 Dataset
+
+| Source | File | Contents |
+|---|---|---|
+| Inside Airbnb (Jun 2025) | `listings_detailed_june.csv` | 5,000+ listings — host, location, amenities, ratings |
+| Inside Airbnb (Sep 2025) | `listings_new.csv` | Second scrape period, same schema |
+| Reviews (Jun) | `reviews_detailed_june.csv` | Review text + timestamps |
+| Reviews (Sep) | `reviews.csv` | Second scrape period reviews |
+| Neighbourhoods | `neighbourhoods.geojson` | Twin Cities GeoJSON for choropleth |
+
+**Target**: `host_is_superhost` (binary) · **Superhost rate**: 52.2% across combined dataset
+
+---
+
+## 🔧 Feature Engineering
+
+| Feature | How computed |
+|---|---|
+| `host_experience_years` | `(scrape_date − host_since).days / 365.25` — per scrape period |
+| `num_amenities` | Regex count of quoted items in raw amenities string |
+| 20 binary amenity flags | `amenities.str.contains(match)` — substring match per amenity |
+| `review_count` | Count of review rows per `listing_id` from reviews CSV |
+| `avg_comment_length` | Mean character length of review comments per listing |
+| `*_log1p` | `np.log1p()` on `host_listings_count`, `number_of_reviews`, `review_count`, `avg_comment_length` |
+
+**Amenity flags** (selected by ≥14pp Superhost-rate difference AND ≥15% coverage):
+`coffee` · `wine glasses` · `baking sheet` · `extra pillows & blankets` · `shower gel` · `toaster` · `hair dryer` · `iron` · `cooking basics` · `dishes & silverware` · `long-term stays` · `self check-in` · `dining table` · `private entrance` · `essentials` · `hangers` · `room-darkening shades` · `dishwasher` · `dedicated workspace` · `hot water`
+
+**Superhost vs. Non-Superhost averages** (from `model_metadata.json`):
+
+| Feature | Superhost | Non-Superhost |
+|---|---|---|
+| `review_scores_rating` | **4.93** | 4.75 |
+| `host_acceptance_rate` | **99%** | 98% |
+| `host_experience_years` | **8.6 yrs** | 6.6 yrs |
+| `reviews_per_month` | 1.53 | 1.20 |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- A [Groq API key](https://console.groq.com) (for the at-risk agent ticket generation)
+
+### 1. Clone
+
+```bash
+git clone https://github.com/Laeeq14/Predicting-Airbnb-Superhost-Status-in-the-Twin-Cities-.git
+cd Predicting-Airbnb-Superhost-Status-in-the-Twin-Cities-
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Set environment variables
+
+Create a `.env` file in the project root:
+
+```env
+GROQ_API_KEY=gsk_xxxx
+```
+
+### 4. (Optional) Re-train the model
+
+> Skip if you just want to run the app — `best_model.joblib` and `model_metadata.json` are already committed.
+
+Download the CSVs from [Inside Airbnb](https://insideairbnb.com/get-the-data/), place them in the project root, then:
+
+```bash
+python ml_pipeline/train_model.py
+```
+
+This trains all 11 models, prints the benchmark table, and saves `best_model.joblib` + `model_metadata.json`.
+
+### 5. Run the app
+
+```bash
+python run_app.py
+```
+
+Or directly:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Open [http://localhost:8000](http://localhost:8000)
+
+---
+
+## 🔌 API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | HTML frontend |
+| `GET` | `/model-info` | Model name, metrics, feature list |
+| `POST` | `/predict` | Superhost probability + top 3 actionable recommendations |
+| `POST` | `/simulate` | Probability curve across listing counts (1–50) |
+| `GET` | `/neighbourhood-stats` | Per-neighbourhood superhost rate, median price, review score |
+| `GET` | `/geojson` | Twin Cities neighbourhood GeoJSON |
+| `GET` | `/agent/at-risk` | SHAP-ranked at-risk listings (optional `?county=` filter) |
+| `GET` | `/agent/counties` | County names in the at-risk pool |
+| `POST` | `/agent/tickets/{listing_id}` | Groq LLM task tickets from guest reviews |
+| `GET` | `/monitoring/drift` | Evidently drift summary JSON |
+| `GET` | `/monitoring/drift-report` | Full interactive Evidently HTML report |
+
+### Example — predict
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "review_scores_rating": 4.7,
+    "reviews_per_month": 1.2,
+    "host_response_rate": 85.0,
+    "host_acceptance_rate": 90.0,
+    "host_experience_years": 3.0,
+    "host_listings_count": 2.0,
+    "amenity_hair_dryer": 1,
+    "amenity_essentials": 1
+  }'
+```
+
+---
+
+## 🧪 Test Suite
+
+```bash
+pytest tests/ -v
+pytest tests/ -v --cov=app --cov=monitoring --cov-report=term-missing
+```
+
+| Test class | Coverage |
+|---|---|
+| `TestModelLoad` | `best_model.joblib` deserializes; `model_metadata.json` has all required keys; model outputs probability in [0, 1] |
+| `TestAPIEndpoints` | `/model-info`, `/predict` (default + ideal Superhost profile → probability > 0.5), `/neighbourhood-stats` |
+| `TestDriftMonitoring` | Drift report runs end-to-end (synthetic path, no CSVs); all monitored features appear in output; `/monitoring/drift` returns valid JSON |
+
+CI design: `GROQ_API_KEY` monkeypatched with a fake key; `build_agent_data` mocked so no CSV loading occurs during tests; only committed artifacts used directly.
+
+---
+
+## 📡 CI/CD Pipeline
+
+Two jobs on every push and PR to `main`:
+
+**Job 1 — Lint & Test** (hard gate)
+
+```yaml
+ruff check app/ monitoring/ tests/
+pytest tests/ -v --cov=app --cov=monitoring
+```
+
+Coverage report uploaded as artifact. Must pass before drift check runs.
+
+**Job 2 — Evidently Drift Gate** (informational, `continue-on-error: true`)
+
+```yaml
+python -m monitoring.drift_report
+```
+
+- Runs against synthetic reference data — no large CSVs required
+- Fails if more than **50%** of monitored features show statistical drift
+- Drift summary posted as a comment on every PR
+- Promote to a hard gate by removing `continue-on-error` when wired to real inference logs
+
+---
+
+## 📁 Project Structure
+
+```
+Predicting-Airbnb-Superhost-Status-in-the-Twin-Cities-/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # Ruff + pytest + Evidently drift gate
+│
+├── ml_pipeline/
+│   ├── train_model.py              # 11-model training pipeline, host-aware split
+│   ├── best_model.joblib           # Winning model (Random Forest, ROC-AUC 0.8703)
+│   ├── model_metadata.json         # Performance table, feature lists, superhost avgs
+│   └── neighbourhood_stats.json    # Per-neighbourhood stats for choropleth
+│
+├── app/
+│   ├── main.py                     # FastAPI — predict, simulate, agent, drift
+│   ├── agent.py                    # SHAP at-risk agent + Groq LLM ticket generation
+│   ├── model_loader.py             # Lazy-loads model + metadata on first request
+│   └── static/
+│       └── index.html              # Vanilla HTML/JS frontend
+│
+├── monitoring/
+│   ├── drift_report.py             # Evidently AI drift monitor (synthetic reference)
+│   ├── drift_report.html           # Full interactive HTML report
+│   └── drift_summary.json          # Machine-readable drift summary
+│
+├── tests/
+│   └── test_api.py                 # pytest — model, API, drift (3 test classes)
+│
+├── classification_modeling.ipynb   # Original EDA + notebook-phase experiments
+├── run_app.py                      # Convenience launcher
+└── requirements.txt                # FastAPI, sklearn, SHAP, Evidently, Groq, ruff
+```
+
+---
+
+## 🤖 Key Design Decisions
+
+**Host-aware train/test split** — The dataset combines two scrape periods. The same host appears in both. A naive `train_test_split()` puts the same host on both sides of the split, letting the model memorize host-specific patterns and inflating test metrics. Splitting on `host_id` ensures no host's data appears in both train and test — equivalent to group K-fold validation.
+
+**20 specific amenity flags** — `num_amenities` treats all amenities equally. The 20 flags were selected by two criteria: ≥14pp Superhost-rate difference AND ≥15% listing coverage. This makes each flag individually actionable in the at-risk agent ("add a baking sheet" vs. "add more amenities").
+
+**Batch SHAP** — Running `TreeExplainer.shap_values()` per row on 100 listings took ~30 seconds at startup. Restructured to preprocess all rows into a single matrix and call `shap_values()` once — ~10× faster.
+
+**Synthetic Evidently reference data** — Training CSVs are ~80MB each, unsuitable for git or CI. Feature medians and class-conditional averages are stored in `model_metadata.json` at training time. A 200-row synthetic reference DataFrame is reconstructed from those statistics at drift-check time — statistically sufficient, zero large-file dependencies.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **ML** | scikit-learn, XGBoost, LightGBM, SHAP |
+| **API** | FastAPI, Uvicorn, Pydantic |
+| **LLM** | Groq (`llama-3.3-70b-versatile`) via OpenAI-compatible client |
+| **Monitoring** | Evidently AI |
+| **CI** | GitHub Actions, ruff, pytest, pytest-cov |
+| **Frontend** | Vanilla HTML/JS |
+
+---
+
+## 📄 License
+
+MIT
