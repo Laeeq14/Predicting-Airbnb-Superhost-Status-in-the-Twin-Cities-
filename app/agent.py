@@ -40,7 +40,7 @@ if not GROQ_API_KEY:
     )
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODEL    = "llama-3.3-70b-versatile"
+GROQ_MODEL    = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 MIN_REVIEWS   = 5
 AT_RISK_N     = 20   # number of listings to surface in the UI per view
 REVIEW_N      = 5    # last N reviews sent to LLM
