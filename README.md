@@ -336,7 +336,7 @@ Predicting-Airbnb-Superhost-Status-in-the-Twin-Cities-/
 |---|---|
 | **ML** | scikit-learn, XGBoost, LightGBM, SHAP |
 | **API** | FastAPI, Uvicorn, Pydantic |
-| **LLM** | Groq (`llama-3.3-70b-versatile`) via OpenAI-compatible client |
+| **LLM** | Groq (`meta-llama/llama-4-scout-17b-16e-instruct`) via OpenAI-compatible client |
 | **Monitoring** | Evidently AI |
 | **CI** | GitHub Actions, ruff, pytest, pytest-cov |
 | **Frontend** | Vanilla HTML/JS |
