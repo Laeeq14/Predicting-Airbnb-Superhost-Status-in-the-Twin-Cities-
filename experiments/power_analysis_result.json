@@ -1,0 +1,10 @@
+{
+  "alpha": 0.05,
+  "power": 0.8,
+  "delta": 0.05,
+  "sigma": 0.3,
+  "effect_size_d": 0.1667,
+  "n_per_arm": 566,
+  "total_n": 1132,
+  "notes": "To detect a 0.050-point improvement in review_scores_rating (Cohen's d = 0.167) with \u03b1=0.05 and 80% power, we need \u2265566 hosts per arm (1132 total). The Twin Cities dataset contains ~10,700 unique listings \u2014 well above this threshold."
+}
