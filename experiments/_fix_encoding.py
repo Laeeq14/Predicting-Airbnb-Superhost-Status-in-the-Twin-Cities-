@@ -1,4 +1,4 @@
-import re, pathlib
+import pathlib
 
 SEP_CHAR = "\u2501"  # ━
 

@@ -43,7 +43,7 @@ Why Mann-Whitney U as primary?
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -509,11 +509,14 @@ def main() -> None:
     print("  ── Statistical Tests ────────────────────────────────────")
     mw  = result.mann_whitney
     tt  = result.ttest
-    sig = lambda r: "✅ SIGNIFICANT" if r.significant else "— not significant"
+
+    def sig(r):
+        return "✅ SIGNIFICANT" if r.significant else "— not significant"
+
     print(f"  Mann-Whitney U : U={mw.statistic:.0f}, p={mw.p_value:.6f}  {sig(mw)}")
     print(f"  Welch's t-test : t={tt.statistic:.4f}, p={tt.p_value:.6f}  {sig(tt)}")
     print()
-    print(f"  ── Conclusion ───────────────────────────────────────────")
+    print("  ── Conclusion ───────────────────────────────────────────")
     print(f"  {result.conclusion}")
     print()
     print("  ── Covariate Balance ────────────────────────────────────")

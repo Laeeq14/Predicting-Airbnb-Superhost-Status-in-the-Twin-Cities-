@@ -41,7 +41,6 @@ from typing import Optional
 
 import numpy as np
 
-
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 DEFAULT_B    = 10_000   # bootstrap iterations
@@ -202,11 +201,10 @@ def main() -> None:
     Intended to be run AFTER ab_test.py (which validates sample sizes).
     """
     from experiments.ab_test import (
-        RESPONSE_RATE_THRESHOLD,
         PRIMARY_OUTCOME,
-        SECONDARY_OUTCOME,
-        _load_data,
+        RESPONSE_RATE_THRESHOLD,
         _clean_response_rate,
+        _load_data,
     )
 
     print("-" * 65)

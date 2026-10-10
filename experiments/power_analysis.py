@@ -42,7 +42,6 @@ import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-
 # ── Constants ────────────────────────────────────────────────────────────────
 
 # Justified in docstring above.
@@ -162,9 +161,9 @@ def main() -> None:
     print("-" * 60)
     print("  Pre-Experiment Power Analysis")
     print("-" * 60)
-    print(f"  Outcome metric  : review_scores_rating (1–5 scale)")
-    print(f"  Treatment       : host_response_rate ≥ 95 % (Badge policy)")
-    print(f"  Control         : host_response_rate < 95 %")
+    print("  Outcome metric  : review_scores_rating (1–5 scale)")
+    print("  Treatment       : host_response_rate ≥ 95 % (Badge policy)")
+    print("  Control         : host_response_rate < 95 %")
     print(f"  Alpha (α)       : {result.alpha}")
     print(f"  Power (1−β)     : {result.power}")
     print(f"  Min effect (δ)  : {result.delta} rating points")

@@ -18,15 +18,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
-from experiments.power_analysis import compute_sample_size
 from experiments.ab_test import run_experiment
-from experiments.bootstrap_ci import bootstrap_delta_mean, bootstrap_bca
-
-import numpy as np
-
+from experiments.bootstrap_ci import bootstrap_bca, bootstrap_delta_mean
+from experiments.power_analysis import compute_sample_size
 
 REPORT_PATH = Path(__file__).parent / "experiment_report.json"
 
@@ -58,8 +55,10 @@ def build_report() -> dict:
     # ── Stage 3: Bootstrap CI ─────────────────────────────────────────────────
     print("[3/3] Running bootstrap CI (10,000 resamples)…")
     from experiments.ab_test import (
-        RESPONSE_RATE_THRESHOLD, PRIMARY_OUTCOME,
-        _load_data, _clean_response_rate,
+        PRIMARY_OUTCOME,
+        RESPONSE_RATE_THRESHOLD,
+        _clean_response_rate,
+        _load_data,
     )
 
     df = _load_data()

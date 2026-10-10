@@ -21,23 +21,22 @@ Test categories
 from __future__ import annotations
 
 import math
-import pytest
+
 import numpy as np
 import pandas as pd
+import pytest
 
-# ── Imports under test ────────────────────────────────────────────────────────
-
-from experiments.power_analysis import compute_sample_size, _z_score
 from experiments.ab_test import (
+    RESPONSE_RATE_THRESHOLD,
+    _cohens_d,
     _mann_whitney_u,
     _ttest_ind,
-    _cohens_d,
     run_experiment,
-    MIN_GROUP_SIZE,
-    RESPONSE_RATE_THRESHOLD,
 )
 from experiments.bootstrap_ci import bootstrap_delta_mean
 
+# ── Imports under test ────────────────────────────────────────────────────────
+from experiments.power_analysis import _z_score, compute_sample_size
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -135,7 +134,13 @@ class TestPowerAnalysis:
         result = compute_sample_size()
         assert isinstance(result.n_per_arm, int)
         # If we compute raw n and ceil it, it must match
-        from experiments.power_analysis import DEFAULT_ALPHA, DEFAULT_POWER, DEFAULT_DELTA, DEFAULT_SIGMA, _z_score
+        from experiments.power_analysis import (
+            DEFAULT_ALPHA,
+            DEFAULT_DELTA,
+            DEFAULT_POWER,
+            DEFAULT_SIGMA,
+            _z_score,
+        )
         z_a = _z_score(1 - DEFAULT_ALPHA / 2)
         z_b = _z_score(DEFAULT_POWER)
         n_raw = 2 * DEFAULT_SIGMA**2 * (z_a + z_b)**2 / DEFAULT_DELTA**2

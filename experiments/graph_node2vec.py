@@ -52,7 +52,6 @@ import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 from scipy.sparse.linalg import svds
-from sklearn.preprocessing import normalize
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
@@ -64,7 +63,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, normalize
 
 warnings.filterwarnings("ignore")
 
@@ -529,7 +528,7 @@ def main() -> None:
     out_path = EXP_DIR / "graph_experiment_results.json"
     with open(out_path, "w") as fh:
         json.dump(output, fh, indent=2)
-    print(f"\n  Results  -> experiments/graph_experiment_results.json")
+    print("\\n  Results  -> experiments/graph_experiment_results.json")
     print(  "  Embeddings -> experiments/graph_embeddings.json")
     print(  "\n  Done.\n")
 
