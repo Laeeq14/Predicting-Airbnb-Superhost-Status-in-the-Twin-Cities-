@@ -1,0 +1,58 @@
+{
+  "experiment": "node2vec_host_cooccurrence",
+  "run_date": "2026-10-10T17:55:40.091196",
+  "graph_stats": {
+    "num_nodes": 3200,
+    "num_edges": 1463347,
+    "avg_degree": 914.59,
+    "median_degree": 621.0,
+    "isolated_nodes": 0
+  },
+  "hyperparameters": {
+    "method": "spectral_svd",
+    "embedding_dim": 64,
+    "normalisation": "row (D^{-1} A)",
+    "scaling": "U * sqrt(S)",
+    "row_l2_norm": true
+  },
+  "model_results": {
+    "RF  [tabular_only]": {
+      "accuracy": 0.7947,
+      "roc_auc": 0.8667,
+      "f1": 0.8039,
+      "precision": 0.8014,
+      "recall": 0.8064
+    },
+    "XGB [tabular_only]": {
+      "accuracy": 0.7834,
+      "roc_auc": 0.866,
+      "f1": 0.7976,
+      "precision": 0.7785,
+      "recall": 0.8176
+    },
+    "RF  [tabular_graph]": {
+      "accuracy": 0.7743,
+      "roc_auc": 0.8473,
+      "f1": 0.7813,
+      "precision": 0.7904,
+      "recall": 0.7725
+    },
+    "XGB [tabular_graph]": {
+      "accuracy": 0.7631,
+      "roc_auc": 0.8508,
+      "f1": 0.7752,
+      "precision": 0.7678,
+      "recall": 0.7828
+    }
+  },
+  "deltas": {
+    "RF": {
+      "delta_auc": -0.0194,
+      "delta_f1": -0.0226
+    },
+    "XGB": {
+      "delta_auc": -0.0152,
+      "delta_f1": -0.0224
+    }
+  }
+}

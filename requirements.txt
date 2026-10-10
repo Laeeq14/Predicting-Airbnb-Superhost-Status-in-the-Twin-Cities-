@@ -19,6 +19,10 @@ lightgbm>=4.3.0
 joblib>=1.3.0
 shap>=0.44.0
 
+# Graph learning (spectral embedding ablation — no C++ required)
+networkx>=3.3
+# scipy and scikit-learn are already listed above
+
 # Agent (LLM + env)
 openai>=1.30.0
 python-dotenv>=1.0.0
